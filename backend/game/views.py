@@ -6,6 +6,10 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from .models import User
 from .services.telegram_auth import verify_telegram_data
+from game.services.rps_engine import validate_move, decide_round_winner
+from game.services.round_state import start_round, submit_move, get_round, end_round
+from game.models import Match
+import time
 
 @csrf_exempt
 def telegram_login(request):
@@ -113,4 +117,49 @@ def find_match(request):
     return JsonResponse({
         "matched": False,
         "message": "Waiting for opponent"
+    })
+@jwt_required
+@require_POST
+def submit_move_view(request):
+    body = json.loads(request.body)
+    match_id = body.get("match_id")
+    move = body.get("move")
+
+    if not validate_move(move):
+        return JsonResponse({"error": "Invalid move"}, status=400)
+
+    match = Match.objects.get(id=match_id)
+
+    # Start round if not started
+    round_data = get_round(match_id)
+    if not round_data:
+        start_round(match_id)
+        round_data = get_round(match_id)
+
+    # Enforce timer
+    if time.time() - round_data["start_time"] > 2:
+        end_round(match_id)
+        return JsonResponse({"error": "Round timeout"}, status=400)
+
+    submit_move(match_id, request.user.id, move)
+
+    # If both players played, decide result
+    moves = round_data["moves"]
+    if len(moves) < 2:
+        return JsonResponse({"status": "waiting"})
+
+    # Identify players
+    p1 = match.player1.id
+    p2 = match.player2.id
+
+    result = decide_round_winner(
+        moves.get(p1),
+        moves.get(p2)
+    )
+
+    end_round(match_id)
+
+    return JsonResponse({
+        "round_result": result,
+        "moves": moves
     })
