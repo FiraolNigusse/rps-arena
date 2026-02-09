@@ -6,7 +6,7 @@ class User(models.Model):
     telegram_id = models.BigIntegerField(unique=True)
     username = models.CharField(max_length=100, blank=True, null=True)
 
-    coins = models.IntegerField(default=0)
+    coins = models.IntegerField(default=1000)
     is_banned = models.BooleanField(default=False)
 
     created_at = models.DateTimeField(default=timezone.now)
