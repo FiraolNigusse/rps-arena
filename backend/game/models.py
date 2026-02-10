@@ -43,6 +43,8 @@ class Match(models.Model):
         null=True,
         blank=True
     )
+    player1_score = models.IntegerField(default=0)
+    player2_score = models.IntegerField(default=0)
 
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')
 

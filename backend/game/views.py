@@ -153,13 +153,49 @@ def submit_move_view(request):
     p2 = match.player2.id
 
     result = decide_round_winner(
-        moves.get(p1),
-        moves.get(p2)
-    )
+    moves.get(p1),
+    moves.get(p2)
+)
 
-    end_round(match_id)
+# Update scores
+if result == "player1":
+    match.player1_score += 1
+elif result == "player2":
+    match.player2_score += 1
+
+match.save()
+end_round(match_id)
+
+# Check for match winner
+if match.player1_score == 2 or match.player2_score == 2:
+    from game.services.payout import payout_match
+    from game.services.rating_service import update_elo
+    from game.services.anti_farm import can_gain_rating
+    from game.models import Rating
+
+    winner = match.player1 if match.player1_score == 2 else match.player2
+    loser = match.player2 if winner == match.player1 else match.player1
+
+    payout_match(winner, match.stake)
+
+    if can_gain_rating(winner, loser):
+        update_elo(
+            Rating.objects.get(user=winner),
+            Rating.objects.get(user=loser)
+        )
+
+    match.winner = winner
+    match.status = "finished"
+    match.save()
 
     return JsonResponse({
-        "round_result": result,
-        "moves": moves
+        "match_finished": True,
+        "winner": winner.username
     })
+
+return JsonResponse({
+    "round_result": result,
+    "player1_score": match.player1_score,
+    "player2_score": match.player2_score
+})
+
