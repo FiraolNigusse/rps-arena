@@ -105,7 +105,7 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
+TELEGRAM_BOT_TOKEN = "PASTE_YOUR_BOT_TOKEN_HERE"
 # Internationalization
 # https://docs.djangoproject.com/en/6.0/topics/i18n/
 
