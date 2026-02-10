@@ -1,7 +1,12 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useEffect, useState } from "react";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+
 import { initTelegram } from "./telegram";
-import { apiPost, setToken } from "./api";
+import { apiPost, setToken } from "./api/api";
+
+import Home from "./pages/Home";
+import Wallet from "./pages/Wallet";
 
 function App() {
   const [status, setStatus] = useState("Initializing...");
@@ -9,6 +14,7 @@ function App() {
 
   useEffect(() => {
     const tg = initTelegram();
+
     if (!tg) {
       setStatus("Not running inside Telegram");
       return;
@@ -23,20 +29,21 @@ function App() {
         setStatus("Logged in");
       })
       .catch(() => {
-        setStatus("Auth failed");
+        setStatus("Authentication failed");
       });
   }, []);
 
   if (!user) {
-    return <div>{status}</div>;
+    return <div style={{ padding: 20 }}>{status}</div>;
   }
 
   return (
-    <div>
-      <h3>Welcome {user.username}</h3>
-      <p>Coins: {user.coins}</p>
-      <p>Rating: {user.rating}</p>
-    </div>
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Home user={user} />} />
+        <Route path="/wallet" element={<Wallet user={user} />} />
+      </Routes>
+    </BrowserRouter>
   );
 }
 
