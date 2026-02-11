@@ -11,6 +11,8 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
 from pathlib import Path
+import os
+from decouple import config
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -20,10 +22,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-ud*5dy+qmi_pmhtmxue1c-d@rb6yaz9%=a%^2_kf)d_v3efm2^'
+SECRET_KEY = config('SECRET_KEY', default='django-insecure-CHANGE-THIS-IN-PRODUCTION')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = config('DEBUG', default=True, cast=bool)
 
 ALLOWED_HOSTS = []
 
@@ -37,7 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-
+    'corsheaders',
     'rest_framework',
     'channels',
 
@@ -46,6 +48,8 @@ INSTALLED_APPS = [
 
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
+    'django.middleware.common.CommonMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -105,7 +109,7 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-TELEGRAM_BOT_TOKEN = "PASTE_YOUR_BOT_TOKEN_HERE"
+
 # Internationalization
 # https://docs.djangoproject.com/en/6.0/topics/i18n/
 
@@ -122,9 +126,11 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = 'static/'
-TELEGRAM_BOT_TOKEN = "PASTE_YOUR_BOT_TOKEN_HERE"
+TELEGRAM_BOT_TOKEN = config('TELEGRAM_BOT_TOKEN')
 import datetime
 
-JWT_SECRET_KEY = "CHANGE_THIS_TO_A_RANDOM_SECRET"
-JWT_ALGORITHM = "HS256"
-JWT_EXP_DELTA_SECONDS = 60 * 60 * 24  # 24 hours
+JWT_SECRET_KEY = config('JWT_SECRET_KEY', default='CHANGE_THIS_TO_A_RANDOM_SECRET')
+JWT_ALGORITHM = config('JWT_ALGORITHM', default='HS256')
+JWT_EXP_DELTA_SECONDS = config('JWT_EXP_DELTA_SECONDS', default=60 * 60 * 24, cast=int)  # 24 hours
+CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True

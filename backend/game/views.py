@@ -11,6 +11,7 @@ from game.services.round_state import start_round, submit_move, get_round, end_r
 from game.models import Match
 import time
 
+
 @csrf_exempt
 def telegram_login(request):
     if request.method != "POST":
@@ -18,6 +19,7 @@ def telegram_login(request):
 
     body = json.loads(request.body)
     init_data = body.get("initData")
+    print("RAW INIT DATA:", init_data)
 
     if not init_data:
         return JsonResponse({"error": "Missing initData"}, status=400)
@@ -37,7 +39,6 @@ def telegram_login(request):
         defaults={"username": username},
     )
 
-    # ISSUE JWT AFTER VERIFIED LOGIN
     from game.services.jwt_service import generate_jwt
     token = generate_jwt(user)
 
@@ -53,10 +54,8 @@ def telegram_login(request):
         "new_user": created,
     })
 
-from django.views.decorators.http import require_POST
+
 from game.services.wallet import add_coins, deduct_coins
-from game.models import User
-import json
 
 
 @jwt_required
@@ -83,7 +82,6 @@ def wallet_add_coins(request):
     })
 
 
-
 @jwt_required
 @require_POST
 def wallet_deduct_coins(request):
@@ -97,6 +95,8 @@ def wallet_deduct_coins(request):
         "message": "Coins deducted",
         "coins": user.coins
     })
+
+
 from game.services.matchmaking import enqueue_player
 
 
@@ -118,6 +118,8 @@ def find_match(request):
         "matched": False,
         "message": "Waiting for opponent"
     })
+
+
 @jwt_required
 @require_POST
 def submit_move_view(request):
@@ -153,49 +155,48 @@ def submit_move_view(request):
     p2 = match.player2.id
 
     result = decide_round_winner(
-    moves.get(p1),
-    moves.get(p2)
-)
+        moves.get(p1),
+        moves.get(p2)
+    )
 
-# Update scores
-if result == "player1":
-    match.player1_score += 1
-elif result == "player2":
-    match.player2_score += 1
+    # Update scores
+    if result == "player1":
+        match.player1_score += 1
+    elif result == "player2":
+        match.player2_score += 1
 
-match.save()
-end_round(match_id)
-
-# Check for match winner
-if match.player1_score == 2 or match.player2_score == 2:
-    from game.services.payout import payout_match
-    from game.services.rating_service import update_elo
-    from game.services.anti_farm import can_gain_rating
-    from game.models import Rating
-
-    winner = match.player1 if match.player1_score == 2 else match.player2
-    loser = match.player2 if winner == match.player1 else match.player1
-
-    payout_match(winner, match.stake)
-
-    if can_gain_rating(winner, loser):
-        update_elo(
-            Rating.objects.get(user=winner),
-            Rating.objects.get(user=loser)
-        )
-
-    match.winner = winner
-    match.status = "finished"
     match.save()
+    end_round(match_id)
+
+    # Check for match winner
+    if match.player1_score == 2 or match.player2_score == 2:
+        from game.services.payout import payout_match
+        from game.services.rating_service import update_elo
+        from game.services.anti_farm import can_gain_rating
+        from game.models import Rating
+
+        winner = match.player1 if match.player1_score == 2 else match.player2
+        loser = match.player2 if winner == match.player1 else match.player1
+
+        payout_match(winner, match.stake)
+
+        if can_gain_rating(winner, loser):
+            update_elo(
+                Rating.objects.get(user=winner),
+                Rating.objects.get(user=loser)
+            )
+
+        match.winner = winner
+        match.status = "finished"
+        match.save()
+
+        return JsonResponse({
+            "match_finished": True,
+            "winner": winner.username
+        })
 
     return JsonResponse({
-        "match_finished": True,
-        "winner": winner.username
+        "round_result": result,
+        "player1_score": match.player1_score,
+        "player2_score": match.player2_score
     })
-
-return JsonResponse({
-    "round_result": result,
-    "player1_score": match.player1_score,
-    "player2_score": match.player2_score
-})
-
