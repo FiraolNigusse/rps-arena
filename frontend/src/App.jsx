@@ -8,6 +8,9 @@ import { apiPost, setToken } from "./api/api";
 import Home from "./pages/Home";
 import Wallet from "./pages/Wallet";
 
+import MatchScreen from "./pages/MatchScreen";
+import ResultsScreen from "./pages/ResultsScreen";
+
 function App() {
   const [status, setStatus] = useState("Initializing...");
   const [user, setUser] = useState(null);
@@ -40,11 +43,12 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Home user={user} />} />
-        <Route path="/wallet" element={<Wallet user={user} />} />
+        <Route path="/" element={<MatchScreen />} />
+        <Route path="/results" element={<ResultsScreen />} />
       </Routes>
     </BrowserRouter>
-  );
+  )
+  
 }
 
 export default App;
