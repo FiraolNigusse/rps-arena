@@ -1,4 +1,5 @@
-import { useState } from "react"
+/* eslint-disable no-unused-vars */ 
+import { useState, useEffect } from "react"
 
 export default function WithdrawScreen() {
   const [coins] = useState(115) // replace later with real user data
@@ -35,6 +36,26 @@ export default function WithdrawScreen() {
     }
   }
 
+  useEffect(() => {
+    if (window.Telegram?.WebApp) {
+      window.Telegram.WebApp.ready()
+    }
+  }, [])
+  
+  const buyCoins = () => {
+    const invoiceLink = "YOUR_INVOICE_LINK_FROM_BACKEND"
+  
+    if (window.Telegram?.WebApp) {
+      window.Telegram.WebApp.openInvoice(invoiceLink, (status) => {
+        if (status === "paid") {
+          alert("Payment successful! Coins will be credited shortly.")
+        } else {
+          alert("Payment cancelled or failed.")
+        }
+      })
+    }
+  }
+  
   return (
     <div style={{ maxWidth: 400, margin: "40px auto", textAlign: "center" }}>
       <h2>Withdraw Coins</h2>
@@ -46,6 +67,21 @@ export default function WithdrawScreen() {
           Withdrawals are reviewed manually within 24 hours.
         </p>
       </div>
+
+      {/* BUY COINS BUTTON */}
+      <button
+        onClick={buyCoins}
+        style={{
+          width: "100%",
+          padding: 12,
+          borderRadius: 8,
+          marginBottom: 20,
+          fontSize: 16,
+          cursor: "pointer",
+        }}
+      >
+        Buy Coins
+      </button>
 
       {status !== "pending" && (
         <form onSubmit={handleSubmit} style={{ marginTop: 20 }}>

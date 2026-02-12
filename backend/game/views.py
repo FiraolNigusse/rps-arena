@@ -10,6 +10,14 @@ from game.services.rps_engine import validate_move, decide_round_winner
 from game.services.round_state import start_round, submit_move, get_round, end_round
 from game.models import Match
 import time
+from rest_framework.response import Response
+from django.views.decorators.csrf import csrf_exempt
+from django.http import JsonResponse
+from .models import Payment
+from django.contrib.auth import get_user_model
+import json
+
+User = get_user_model()
 
 
 @csrf_exempt
@@ -236,3 +244,41 @@ def submit_match(request):
         "opponent_move": opponent,
         "result": result
     })
+@csrf_exempt
+def telegram_webhook(request):
+    if request.method == "POST":
+        data = json.loads(request.body)
+
+        if "message" in data and "successful_payment" in data["message"]:
+            payment = data["message"]["successful_payment"]
+
+            telegram_charge_id = payment["telegram_payment_charge_id"]
+            provider_charge_id = payment["provider_payment_charge_id"]
+            total_amount = payment["total_amount"]
+
+            telegram_user = data["message"]["from"]["id"]
+
+            try:
+                user = User.objects.get(telegram_id=telegram_user)
+
+                coins_to_credit = total_amount // 100  # example rate
+
+                Payment.objects.create(
+                    user=user,
+                    telegram_payment_charge_id=telegram_charge_id,
+                    provider_payment_charge_id=provider_charge_id,
+                    amount=total_amount,
+                    coins_credited=coins_to_credit,
+                )
+
+                user.coins += coins_to_credit
+                user.save()
+
+                return JsonResponse({"status": "ok"})
+
+            except User.DoesNotExist:
+                return JsonResponse({"error": "User not found"}, status=404)
+
+        return JsonResponse({"status": "ignored"})
+
+    return JsonResponse({"error": "invalid request"}, status=400)

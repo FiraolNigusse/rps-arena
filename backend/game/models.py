@@ -98,3 +98,14 @@ class Match(models.Model):
     opponent_move = models.CharField(max_length=20, null=True, blank=True)
     result = models.CharField(max_length=10, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+class Payment(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    telegram_payment_charge_id = models.CharField(max_length=255, unique=True)
+    provider_payment_charge_id = models.CharField(max_length=255)
+    amount = models.IntegerField()
+    coins_credited = models.IntegerField()
+    status = models.CharField(max_length=20, default="completed")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user.username} - {self.amount}"

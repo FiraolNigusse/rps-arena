@@ -6,6 +6,8 @@ from .views import (
     wallet_add_coins,
     wallet_deduct_coins
 )
+from .views import submit_match
+from .views import telegram_webhook
 
 urlpatterns = [
     path("auth/telegram/", telegram_login),
@@ -15,5 +17,6 @@ urlpatterns = [
     path("wallet/deduct/", wallet_deduct_coins),
     path("match/find/", find_match),
     path("match/submit/", submit_match),
+    path("telegram/webhook/", telegram_webhook),
 
 ]
