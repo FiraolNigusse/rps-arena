@@ -33,24 +33,36 @@ export default function MatchScreen() {
     handleMoveSelect(randomMove)
   }
 
-  const handleMoveSelect = (move) => {
+  const handleMoveSelect = async (move) => {
     if (matchState !== "choosing") return
 
     setSelectedMove(move)
     setMatchState("waiting")
 
     // simulate opponent response
-    setTimeout(() => {
-      const moves = ["rock", "paper", "scissors"]
-      const opponentMove = moves[Math.floor(Math.random() * 3)]
-
+    try {
+      const response = await fetch("http://127.0.0.1:8000/api/match/submit/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("access")}`,
+        },
+        body: JSON.stringify({ move }),
+      })
+    
+      const data = await response.json()
+    
       navigate("/results", {
         state: {
-          playerMove: move,
-          opponentMove: opponentMove,
+          playerMove: data.player_move,
+          opponentMove: data.opponent_move,
+          result: data.result,
         },
       })
-    }, 3000)
+    } catch (err) {
+      console.error(err)
+    }
+    
   }
 
   return (

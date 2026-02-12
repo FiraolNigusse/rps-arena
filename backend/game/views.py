@@ -200,3 +200,39 @@ def submit_move_view(request):
         "player1_score": match.player1_score,
         "player2_score": match.player2_score
     })
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
+from .models import Match
+import random
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def submit_match(request):
+    move = request.data.get("move")
+
+    opponent_moves = ["rock", "paper", "scissors"]
+    opponent = random.choice(opponent_moves)
+
+    if move == opponent:
+        result = "draw"
+    elif (
+        (move == "rock" and opponent == "scissors") or
+        (move == "paper" and opponent == "rock") or
+        (move == "scissors" and opponent == "paper")
+    ):
+        result = "win"
+    else:
+        result = "lose"
+
+    match = Match.objects.create(
+        player=request.user,
+        player_move=move,
+        opponent_move=opponent,
+        result=result,
+    )
+
+    return Response({
+        "player_move": move,
+        "opponent_move": opponent,
+        "result": result
+    })

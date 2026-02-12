@@ -14,5 +14,6 @@ urlpatterns = [
     path("wallet/add/", wallet_add_coins),
     path("wallet/deduct/", wallet_deduct_coins),
     path("match/find/", find_match),
+    path("match/submit/", submit_match),
 
 ]

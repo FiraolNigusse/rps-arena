@@ -92,3 +92,9 @@ class Withdrawal(models.Model):
 
 
 # Create your models here.
+class Match(models.Model):
+    player = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
+    player_move = models.CharField(max_length=20, null=True, blank=True)
+    opponent_move = models.CharField(max_length=20, null=True, blank=True)
+    result = models.CharField(max_length=10, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
