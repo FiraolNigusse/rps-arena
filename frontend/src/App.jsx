@@ -7,6 +7,7 @@ import { apiPost, setToken } from "./api/api";
 
 import Home from "./pages/Home";
 import Wallet from "./pages/Wallet";
+import WithdrawScreen from "./pages/WithdrawScreen"
 
 import MatchScreen from "./pages/MatchScreen";
 import ResultsScreen from "./pages/ResultsScreen";
@@ -45,6 +46,8 @@ function App() {
       <Routes>
         <Route path="/" element={<MatchScreen />} />
         <Route path="/results" element={<ResultsScreen />} />
+        <Route path="/withdraw" element={<WithdrawScreen />} />
+        
       </Routes>
     </BrowserRouter>
   )

@@ -53,6 +53,18 @@ export default function ResultsScreen() {
       >
         Play Again
       </button>
+      <button
+        onClick={() => navigate("/withdraw")}
+        style={{
+        padding: "12px 25px",
+        fontSize: 14,
+        borderRadius: 8,
+        marginTop: 10,
+  }}
+>
+  Withdraw Coins
+</button>
+
     </div>
   )
 }
