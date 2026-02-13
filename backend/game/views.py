@@ -7,6 +7,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 from django.utils import timezone
 from django.db.models import Sum
+from datetime import timedelta
 
 from rest_framework.response import Response
 from rest_framework.decorators import api_view, permission_classes
@@ -20,6 +21,9 @@ from game.services.rps_engine import validate_move, decide_round_winner
 from game.services.round_state import start_round, submit_move, get_round, end_round
 from game.services.matchmaking import enqueue_player
 
+# -------------------------
+# Telegram login
+# -------------------------
 @csrf_exempt
 def telegram_login(request):
     if request.method != "POST":
@@ -32,12 +36,10 @@ def telegram_login(request):
         return JsonResponse({"error": "Missing initData"}, status=400)
 
     data = verify_telegram_data(init_data)
-
     if not data:
         return JsonResponse({"error": "Invalid Telegram signature"}, status=403)
 
     user_data = json.loads(data.get("user"))
-
     telegram_id = user_data["id"]
     username = user_data.get("username") or f"user_{telegram_id}"
 
@@ -60,6 +62,9 @@ def telegram_login(request):
         "new_user": created,
     })
 
+# -------------------------
+# Wallet endpoints
+# -------------------------
 @jwt_required
 @require_POST
 def wallet_balance(request):
@@ -93,13 +98,18 @@ def wallet_deduct_coins(request):
         "coins": request.user.coins
     })
 
+# -------------------------
+# Find match with IP tracking
+# -------------------------
 @jwt_required
 @require_POST
 def find_match(request):
     body = json.loads(request.body)
     stake = int(body.get("stake"))
 
-    match = enqueue_player(request.user, stake)
+    ip_address = request.META.get("REMOTE_ADDR")  # <-- store IP
+
+    match = enqueue_player(request.user, stake, ip_address)
 
     if match:
         return JsonResponse({
@@ -112,6 +122,9 @@ def find_match(request):
         "message": "Waiting for opponent"
     })
 
+# -------------------------
+# Submit move
+# -------------------------
 @jwt_required
 @require_POST
 def submit_move_view(request):
@@ -119,8 +132,19 @@ def submit_move_view(request):
     match_id = body.get("match_id")
     move = body.get("move")
 
+    # Validate move
     if not validate_move(move):
         return JsonResponse({"error": "Invalid move"}, status=400)
+
+    # Rapid play detection: max 10 matches per minute
+    recent_matches = Match.objects.filter(
+        player1=request.user
+    ).filter(
+        created_at__gte=timezone.now() - timedelta(minutes=1)
+    ).count()
+
+    if recent_matches > 10:
+        return Response({"error": "Too many matches. Slow down."}, status=429)
 
     match = Match.objects.get(id=match_id)
 
@@ -176,6 +200,9 @@ def submit_move_view(request):
         "player2_score": match.player2_score
     })
 
+# -------------------------
+# Telegram webhook for payments
+# -------------------------
 @csrf_exempt
 def telegram_webhook(request):
     if request.method != "POST":
@@ -191,7 +218,6 @@ def telegram_webhook(request):
 
         try:
             user = User.objects.get(telegram_id=telegram_user)
-
             coins_to_credit = total_amount // 100
 
             Payment.objects.create(
@@ -212,6 +238,9 @@ def telegram_webhook(request):
 
     return JsonResponse({"status": "ignored"})
 
+# -------------------------
+# Request withdrawal
+# -------------------------
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def request_withdrawal(request):

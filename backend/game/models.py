@@ -36,6 +36,10 @@ class Match(models.Model):
     player2 = models.ForeignKey(User, related_name='player2_matches', on_delete=models.CASCADE)
 
     stake = models.IntegerField()
+
+    # NEW FIELD
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+
     winner = models.ForeignKey(
         User,
         related_name='wins',
@@ -43,6 +47,7 @@ class Match(models.Model):
         null=True,
         blank=True
     )
+
     player1_score = models.IntegerField(default=0)
     player2_score = models.IntegerField(default=0)
 
@@ -52,6 +57,7 @@ class Match(models.Model):
 
     def __str__(self):
         return f"Match {self.id} ({self.player1} vs {self.player2})"
+
 
 
 class Transaction(models.Model):
