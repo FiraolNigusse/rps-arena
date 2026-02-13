@@ -1,38 +1,45 @@
-/* eslint-disable no-unused-vars */
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
+import { apiPost } from "../api/api"
 import "./WithdrawScreen.css"
 
 export default function WithdrawScreen() {
   const navigate = useNavigate()
-  const [coins] = useState(115)
+  const [coins, setCoins] = useState(0)
   const [amount, setAmount] = useState("")
   const [wallet, setWallet] = useState("")
   const [status, setStatus] = useState("idle")
+  const [error, setError] = useState("")
 
   const MIN_WITHDRAW = 50
 
+  useEffect(() => {
+    apiPost("/wallet/balance/", {})
+      .then((res) => setCoins(res.coins ?? 0))
+      .catch(() => setCoins(0))
+  }, [])
+
   const handleSubmit = async (e) => {
     e.preventDefault()
+    setError("")
 
     if (Number(amount) < MIN_WITHDRAW) {
-      alert(`Minimum withdrawal is ${MIN_WITHDRAW} coins`)
+      setError(`Minimum withdrawal is ${MIN_WITHDRAW} coins`)
       return
     }
 
     if (Number(amount) > coins) {
-      alert("Insufficient balance")
+      setError("Insufficient balance")
       return
     }
 
     try {
       setStatus("submitting")
-
-      setTimeout(() => {
-        setStatus("pending")
-      }, 1000)
+      await apiPost("/withdraw/request/", { amount: Number(amount), wallet })
+      setStatus("pending")
     } catch (err) {
       setStatus("error")
+      setError(err?.data?.error || "Request failed")
     }
   }
 
@@ -112,6 +119,10 @@ export default function WithdrawScreen() {
             {status === "submitting" ? "Submitting..." : "Request Withdrawal"}
           </button>
         </form>
+      )}
+
+      {status === "error" && error && (
+        <p className="withdraw-screen__error">{error}</p>
       )}
 
       {status === "pending" && (

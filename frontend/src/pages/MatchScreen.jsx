@@ -3,6 +3,7 @@
 /* eslint-disable react-hooks/immutability */
 import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
+import { apiPost, getToken } from "../api/api"
 import "./MatchScreen.css"
 
 export default function MatchScreen() {
@@ -39,16 +40,7 @@ export default function MatchScreen() {
     setMatchState("waiting")
 
     try {
-      const response = await fetch("http://127.0.0.1:8000/api/match/submit/", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("access")}`,
-        },
-        body: JSON.stringify({ move }),
-      })
-
-      const data = await response.json()
+      const data = await apiPost("/match/submit/", { move })
 
       navigate("/results", {
         state: {

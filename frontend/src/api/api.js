@@ -1,27 +1,47 @@
-const API_BASE = "http://127.0.0.1:8000/api";
+const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api";
+const TOKEN_KEY = "rps_token";
 
 let token = null;
 
-export function setToken(jwt) {
-  token = jwt;
-}
-
-export function getToken() {
+function loadToken() {
+  if (token) return token;
+  try {
+    const stored = localStorage.getItem(TOKEN_KEY);
+    if (stored) token = stored;
+  } catch (_) {}
   return token;
 }
 
+export function setToken(jwt) {
+  token = jwt;
+  try {
+    if (jwt) localStorage.setItem(TOKEN_KEY, jwt);
+    else localStorage.removeItem(TOKEN_KEY);
+  } catch (_) {}
+}
+
+export function getToken() {
+  return token || loadToken();
+}
+
 async function request(path, method, body = null) {
+  const authToken = getToken();
   const res = await fetch(`${API_BASE}${path}`, {
     method,
     headers: {
       "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {})
+      ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
     },
-    body: body ? JSON.stringify(body) : null
+    body: body ? JSON.stringify(body) : null,
   });
 
   if (!res.ok) {
-    throw new Error("API request failed");
+    const err = new Error("API request failed");
+    err.status = res.status;
+    try {
+      err.data = await res.json();
+    } catch (_) {}
+    throw err;
   }
 
   return res.json();

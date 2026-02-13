@@ -7,7 +7,7 @@ from .views import (
     wallet_deduct_coins,
     request_withdrawal,
 )
-from .views import submit_move_view
+from .views import submit_move_view, quick_play_submit
 from .views import telegram_webhook
 
 urlpatterns = [
@@ -18,6 +18,7 @@ urlpatterns = [
     path("wallet/deduct/", wallet_deduct_coins),
     path("match/find/", find_match),
     path("match/", submit_move_view),
+    path("match/submit/", quick_play_submit),
     path("telegram/webhook/", telegram_webhook),
     path("withdraw/request/", request_withdrawal),
 

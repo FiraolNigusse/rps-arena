@@ -9,9 +9,6 @@ from django.utils import timezone
 from django.db.models import Sum
 from datetime import timedelta
 
-from rest_framework.response import Response
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated
 
 from .models import User, Match, Payment, Withdrawal
 from game.services.auth import jwt_required
@@ -239,22 +236,55 @@ def telegram_webhook(request):
     return JsonResponse({"status": "ignored"})
 
 # -------------------------
+# Quick-play vs AI (for Telegram Mini App)
+# -------------------------
+@jwt_required
+@require_POST
+def quick_play_submit(request):
+    """Single-round RPS vs random opponent. Returns result for ResultsScreen."""
+    import random
+
+    body = json.loads(request.body)
+    move = body.get("move")
+
+    if not validate_move(move):
+        return JsonResponse({"error": "Invalid move"}, status=400)
+
+    opponent_move = random.choice(["rock", "paper", "scissors"])
+    result = decide_round_winner(move, opponent_move)
+
+    # Map internal result to frontend format
+    result_map = {"player1": "win", "player2": "lose", "draw": "draw"}
+    result_str = result_map.get(result, "draw")
+
+    return JsonResponse({
+        "player_move": move,
+        "opponent_move": opponent_move,
+        "result": result_str,
+    })
+
+
+# -------------------------
 # Request withdrawal
 # -------------------------
-@api_view(["POST"])
-@permission_classes([IsAuthenticated])
+@jwt_required
+@require_POST
 def request_withdrawal(request):
-    amount = int(request.data.get("amount"))
-    wallet = request.data.get("wallet")
+    body = json.loads(request.body)
+    amount = int(body.get("amount", 0))
+    wallet = body.get("wallet", "").strip()
 
     MIN_WITHDRAW = 50
     DAILY_LIMIT = 500
 
     if amount < MIN_WITHDRAW:
-        return Response({"error": "Minimum withdrawal is 50"}, status=400)
+        return JsonResponse({"error": "Minimum withdrawal is 50"}, status=400)
+
+    if not wallet:
+        return JsonResponse({"error": "Wallet address is required"}, status=400)
 
     if request.user.coins < amount:
-        return Response({"error": "Insufficient balance"}, status=400)
+        return JsonResponse({"error": "Insufficient balance"}, status=400)
 
     today = timezone.now().date()
 
@@ -264,7 +294,7 @@ def request_withdrawal(request):
     ).aggregate(total=Sum("amount"))["total"] or 0
 
     if daily_total + amount > DAILY_LIMIT:
-        return Response({"error": "Daily withdrawal limit exceeded"}, status=400)
+        return JsonResponse({"error": "Daily withdrawal limit exceeded"}, status=400)
 
     Withdrawal.objects.create(
         user=request.user,
@@ -272,4 +302,4 @@ def request_withdrawal(request):
         wallet_address=wallet,
     )
 
-    return Response({"message": "Withdrawal request submitted"})
+    return JsonResponse({"message": "Withdrawal request submitted"})

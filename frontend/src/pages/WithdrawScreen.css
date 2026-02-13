@@ -97,6 +97,12 @@
   font-size: 0.95rem;
 }
 
+.withdraw-screen__error {
+  color: var(--danger);
+  font-size: 0.9rem;
+  margin-top: 1rem;
+}
+
 .withdraw-screen__back {
   width: 100%;
   margin-top: 2rem;
