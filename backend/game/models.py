@@ -72,32 +72,6 @@ class Transaction(models.Model):
     def __str__(self):
         return f"{self.user} {self.type} {self.amount}"
 
-
-class Withdrawal(models.Model):
-    STATUS_CHOICES = [
-        ('pending', 'Pending'),
-        ('approved', 'Approved'),
-        ('rejected', 'Rejected'),
-    ]
-
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    coins = models.IntegerField()
-    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')
-
-    requested_at = models.DateTimeField(default=timezone.now)
-    processed_at = models.DateTimeField(null=True, blank=True)
-
-    def __str__(self):
-        return f"{self.user} - {self.coins} ({self.status})"
-
-
-# Create your models here.
-class Match(models.Model):
-    player = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
-    player_move = models.CharField(max_length=20, null=True, blank=True)
-    opponent_move = models.CharField(max_length=20, null=True, blank=True)
-    result = models.CharField(max_length=10, null=True, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
 class Payment(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     telegram_payment_charge_id = models.CharField(max_length=255, unique=True)
@@ -109,3 +83,19 @@ class Payment(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - {self.amount}"
+class Withdrawal(models.Model):
+    STATUS_CHOICES = [
+        ("pending", "Pending"),
+        ("approved", "Approved"),
+        ("rejected", "Rejected"),
+    ]
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    amount = models.IntegerField()
+    wallet_address = models.CharField(max_length=255)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="pending")
+    requested_at = models.DateTimeField(auto_now_add=True)
+    processed_at = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.user.username} - {self.amount} - {self.status}"

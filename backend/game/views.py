@@ -1,21 +1,24 @@
-from django.shortcuts import render
-from game.services.auth import jwt_required
-from django.views.decorators.http import require_POST
 import json
+import time
+import random
+
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from .models import User
-from .services.telegram_auth import verify_telegram_data
+from django.views.decorators.http import require_POST
+from django.utils import timezone
+from django.db.models import Sum
+
+from rest_framework.response import Response
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
+
+from .models import User, Match, Payment, Withdrawal
+from game.services.auth import jwt_required
+from game.services.telegram_auth import verify_telegram_data
+from game.services.wallet import add_coins, deduct_coins
 from game.services.rps_engine import validate_move, decide_round_winner
 from game.services.round_state import start_round, submit_move, get_round, end_round
-from game.models import Match
-import time
-from rest_framework.response import Response
-from django.views.decorators.csrf import csrf_exempt
-from django.http import JsonResponse
-from .models import Payment
-import json
-
+from game.services.matchmaking import enqueue_player
 
 @csrf_exempt
 def telegram_login(request):
@@ -24,7 +27,6 @@ def telegram_login(request):
 
     body = json.loads(request.body)
     init_data = body.get("initData")
-    print("RAW INIT DATA:", init_data)
 
     if not init_data:
         return JsonResponse({"error": "Missing initData"}, status=400)
@@ -54,22 +56,14 @@ def telegram_login(request):
             "telegram_id": user.telegram_id,
             "username": user.username,
             "coins": user.coins,
-            "rating": user.rating.value if hasattr(user, "rating") else 1000,
         },
         "new_user": created,
     })
 
-
-from game.services.wallet import add_coins, deduct_coins
-
-
 @jwt_required
 @require_POST
 def wallet_balance(request):
-    user = request.user
-    return JsonResponse({
-        "coins": user.coins
-    })
+    return JsonResponse({"coins": request.user.coins})
 
 
 @jwt_required
@@ -78,12 +72,11 @@ def wallet_add_coins(request):
     body = json.loads(request.body)
     amount = int(body.get("amount"))
 
-    user = request.user
-    add_coins(user, amount, tx_type="purchase")
+    add_coins(request.user, amount, tx_type="purchase")
 
     return JsonResponse({
         "message": "Coins added",
-        "coins": user.coins
+        "coins": request.user.coins
     })
 
 
@@ -93,17 +86,12 @@ def wallet_deduct_coins(request):
     body = json.loads(request.body)
     amount = int(body.get("amount"))
 
-    user = request.user
-    deduct_coins(user, amount, tx_type="stake")
+    deduct_coins(request.user, amount, tx_type="stake")
 
     return JsonResponse({
         "message": "Coins deducted",
-        "coins": user.coins
+        "coins": request.user.coins
     })
-
-
-from game.services.matchmaking import enqueue_player
-
 
 @jwt_required
 @require_POST
@@ -124,7 +112,6 @@ def find_match(request):
         "message": "Waiting for opponent"
     })
 
-
 @jwt_required
 @require_POST
 def submit_move_view(request):
@@ -137,25 +124,21 @@ def submit_move_view(request):
 
     match = Match.objects.get(id=match_id)
 
-    # Start round if not started
     round_data = get_round(match_id)
     if not round_data:
         start_round(match_id)
         round_data = get_round(match_id)
 
-    # Enforce timer
     if time.time() - round_data["start_time"] > 2:
         end_round(match_id)
         return JsonResponse({"error": "Round timeout"}, status=400)
 
     submit_move(match_id, request.user.id, move)
 
-    # If both players played, decide result
     moves = round_data["moves"]
     if len(moves) < 2:
         return JsonResponse({"status": "waiting"})
 
-    # Identify players
     p1 = match.player1.id
     p2 = match.player2.id
 
@@ -164,7 +147,6 @@ def submit_move_view(request):
         moves.get(p2)
     )
 
-    # Update scores
     if result == "player1":
         match.player1_score += 1
     elif result == "player2":
@@ -173,27 +155,15 @@ def submit_move_view(request):
     match.save()
     end_round(match_id)
 
-    # Check for match winner
     if match.player1_score == 2 or match.player2_score == 2:
         from game.services.payout import payout_match
-        from game.services.rating_service import update_elo
-        from game.services.anti_farm import can_gain_rating
-        from game.models import Rating
 
         winner = match.player1 if match.player1_score == 2 else match.player2
-        loser = match.player2 if winner == match.player1 else match.player1
-
-        payout_match(winner, match.stake)
-
-        if can_gain_rating(winner, loser):
-            update_elo(
-                Rating.objects.get(user=winner),
-                Rating.objects.get(user=loser)
-            )
-
         match.winner = winner
         match.status = "finished"
         match.save()
+
+        payout_match(winner, match.stake)
 
         return JsonResponse({
             "match_finished": True,
@@ -205,77 +175,72 @@ def submit_move_view(request):
         "player1_score": match.player1_score,
         "player2_score": match.player2_score
     })
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated
-from .models import Match
-import random
+
+@csrf_exempt
+def telegram_webhook(request):
+    if request.method != "POST":
+        return JsonResponse({"error": "invalid request"}, status=400)
+
+    data = json.loads(request.body)
+
+    if "message" in data and "successful_payment" in data["message"]:
+        payment = data["message"]["successful_payment"]
+
+        telegram_user = data["message"]["from"]["id"]
+        total_amount = payment["total_amount"]
+
+        try:
+            user = User.objects.get(telegram_id=telegram_user)
+
+            coins_to_credit = total_amount // 100
+
+            Payment.objects.create(
+                user=user,
+                telegram_payment_charge_id=payment["telegram_payment_charge_id"],
+                provider_payment_charge_id=payment["provider_payment_charge_id"],
+                amount=total_amount,
+                coins_credited=coins_to_credit,
+            )
+
+            user.coins += coins_to_credit
+            user.save()
+
+            return JsonResponse({"status": "ok"})
+
+        except User.DoesNotExist:
+            return JsonResponse({"error": "User not found"}, status=404)
+
+    return JsonResponse({"status": "ignored"})
 
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
-def submit_match(request):
-    move = request.data.get("move")
+def request_withdrawal(request):
+    amount = int(request.data.get("amount"))
+    wallet = request.data.get("wallet")
 
-    opponent_moves = ["rock", "paper", "scissors"]
-    opponent = random.choice(opponent_moves)
+    MIN_WITHDRAW = 50
+    DAILY_LIMIT = 500
 
-    if move == opponent:
-        result = "draw"
-    elif (
-        (move == "rock" and opponent == "scissors") or
-        (move == "paper" and opponent == "rock") or
-        (move == "scissors" and opponent == "paper")
-    ):
-        result = "win"
-    else:
-        result = "lose"
+    if amount < MIN_WITHDRAW:
+        return Response({"error": "Minimum withdrawal is 50"}, status=400)
 
-    match = Match.objects.create(
-        player=request.user,
-        player_move=move,
-        opponent_move=opponent,
-        result=result,
+    if request.user.coins < amount:
+        return Response({"error": "Insufficient balance"}, status=400)
+
+    today = timezone.now().date()
+
+    daily_total = Withdrawal.objects.filter(
+        user=request.user,
+        requested_at__date=today,
+    ).aggregate(total=Sum("amount"))["total"] or 0
+
+    if daily_total + amount > DAILY_LIMIT:
+        return Response({"error": "Daily withdrawal limit exceeded"}, status=400)
+
+    Withdrawal.objects.create(
+        user=request.user,
+        amount=amount,
+        wallet_address=wallet,
     )
 
-    return Response({
-        "player_move": move,
-        "opponent_move": opponent,
-        "result": result
-    })
-@csrf_exempt
-def telegram_webhook(request):
-    if request.method == "POST":
-        data = json.loads(request.body)
-
-        if "message" in data and "successful_payment" in data["message"]:
-            payment = data["message"]["successful_payment"]
-
-            telegram_charge_id = payment["telegram_payment_charge_id"]
-            provider_charge_id = payment["provider_payment_charge_id"]
-            total_amount = payment["total_amount"]
-
-            telegram_user = data["message"]["from"]["id"]
-
-            try:
-                user = User.objects.get(telegram_id=telegram_user)
-
-                coins_to_credit = total_amount // 100  # example rate
-
-                Payment.objects.create(
-                    user=user,
-                    telegram_payment_charge_id=telegram_charge_id,
-                    provider_payment_charge_id=provider_charge_id,
-                    amount=total_amount,
-                    coins_credited=coins_to_credit,
-                )
-
-                user.coins += coins_to_credit
-                user.save()
-
-                return JsonResponse({"status": "ok"})
-
-            except User.DoesNotExist:
-                return JsonResponse({"error": "User not found"}, status=404)
-
-        return JsonResponse({"status": "ignored"})
-
-    return JsonResponse({"error": "invalid request"}, status=400)
+    return Response({"message": "Withdrawal request submitted"})
