@@ -5,12 +5,11 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { initTelegram } from "./telegram";
 import { apiPost, setToken } from "./api/api";
 
-import Home from "./pages/Home";
-import Wallet from "./pages/Wallet";
-import WithdrawScreen from "./pages/WithdrawScreen"
-
 import MatchScreen from "./pages/MatchScreen";
 import ResultsScreen from "./pages/ResultsScreen";
+import WithdrawScreen from "./pages/WithdrawScreen";
+
+import "./App.css";
 
 function App() {
   const [status, setStatus] = useState("Initializing...");
@@ -38,20 +37,25 @@ function App() {
   }, []);
 
   if (!user) {
-    return <div style={{ padding: 20 }}>{status}</div>;
+    return (
+      <div className="auth-loading">
+        <div className="auth-loading__spinner" />
+        <p className="auth-loading__text">{status}</p>
+      </div>
+    );
   }
 
   return (
     <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<MatchScreen />} />
-        <Route path="/results" element={<ResultsScreen />} />
-        <Route path="/withdraw" element={<WithdrawScreen />} />
-        
-      </Routes>
+      <div className="app-container">
+        <Routes>
+          <Route path="/" element={<MatchScreen />} />
+          <Route path="/results" element={<ResultsScreen />} />
+          <Route path="/withdraw" element={<WithdrawScreen />} />
+        </Routes>
+      </div>
     </BrowserRouter>
-  )
-  
+  );
 }
 
 export default App;

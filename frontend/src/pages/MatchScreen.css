@@ -1,0 +1,117 @@
+.match-screen {
+  padding: 2rem 0;
+  text-align: center;
+}
+
+.match-screen__title {
+  font-size: 1.75rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, var(--text-primary) 0%, var(--text-secondary) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 0.25rem;
+}
+
+.match-screen__subtitle {
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  margin-bottom: 2rem;
+}
+
+.match-screen__timer {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.25rem;
+  font-weight: 800;
+  background: var(--bg-card);
+  border: 2px solid var(--border);
+  border-radius: 50%;
+  color: var(--accent);
+  transition: all 0.2s ease;
+}
+
+.match-screen__timer--urgent {
+  border-color: var(--danger);
+  color: var(--danger);
+  animation: pulse 1s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+.match-screen__status {
+  min-height: 1.5rem;
+  margin-bottom: 2rem;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.match-screen__status--waiting {
+  color: var(--accent);
+  animation: blink 1.5s ease-in-out infinite;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.match-screen__moves {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1rem;
+  max-width: 340px;
+  margin: 0 auto;
+}
+
+.move-btn {
+  flex: 1;
+  min-width: 95px;
+  max-width: 110px;
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 1rem;
+  background: var(--bg-card);
+  border: 2px solid var(--border);
+  border-radius: 16px;
+  color: var(--text-primary);
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.move-btn:hover:not(:disabled) {
+  border-color: var(--accent);
+  box-shadow: 0 0 20px var(--accent-glow);
+  transform: translateY(-2px);
+}
+
+.move-btn--selected {
+  border-color: var(--accent);
+  background: rgba(0, 212, 170, 0.12);
+  box-shadow: 0 0 24px var(--accent-glow);
+}
+
+.move-btn--disabled {
+  opacity: 0.6;
+}
+
+.move-btn__emoji {
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.move-btn__label {
+  font-size: 0.85rem;
+}

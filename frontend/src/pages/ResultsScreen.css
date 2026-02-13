@@ -1,0 +1,129 @@
+.results-screen {
+  padding: 2rem 0;
+  text-align: center;
+}
+
+.results-screen__title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 2rem;
+  color: var(--text-primary);
+}
+
+.results-screen__error {
+  color: var(--text-secondary);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  align-items: center;
+}
+
+.results-screen__moves {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+}
+
+.results-screen__move-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 1rem 1.5rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  min-width: 100px;
+}
+
+.results-screen__move-emoji {
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.results-screen__move-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.results-screen__move-value {
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.results-screen__vs {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.results-screen__result {
+  font-size: 2rem;
+  font-weight: 800;
+  margin-bottom: 2rem;
+  padding: 0.75rem 1.5rem;
+  border-radius: 12px;
+  display: inline-block;
+}
+
+.results-screen__result--win {
+  color: var(--success);
+  background: rgba(0, 212, 170, 0.15);
+  border: 1px solid rgba(0, 212, 170, 0.3);
+}
+
+.results-screen__result--lose {
+  color: var(--danger);
+  background: rgba(255, 77, 106, 0.12);
+  border: 1px solid rgba(255, 77, 106, 0.25);
+}
+
+.results-screen__result--draw {
+  color: var(--text-secondary);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+}
+
+.results-screen__stats {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+.results-screen__stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.results-screen__stat-label {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.results-screen__stat-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.results-screen__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-width: 280px;
+  margin: 0 auto;
+}
+
+.results-screen__actions .btn-primary,
+.results-screen__actions .btn-secondary {
+  width: 100%;
+  padding: 1rem;
+}

@@ -1,24 +1,26 @@
-/* eslint-disable no-unused-vars */ 
+/* eslint-disable no-unused-vars */
 import { useState, useEffect } from "react"
+import { useNavigate } from "react-router-dom"
+import "./WithdrawScreen.css"
 
 export default function WithdrawScreen() {
-  const [coins] = useState(115) // replace later with real user data
+  const navigate = useNavigate()
+  const [coins] = useState(115)
   const [amount, setAmount] = useState("")
   const [wallet, setWallet] = useState("")
-  const [status, setStatus] = useState("idle") 
-  // idle | submitting | pending | error
+  const [status, setStatus] = useState("idle")
 
   const MIN_WITHDRAW = 50
 
   const handleSubmit = async (e) => {
     e.preventDefault()
 
-    if (amount < MIN_WITHDRAW) {
+    if (Number(amount) < MIN_WITHDRAW) {
       alert(`Minimum withdrawal is ${MIN_WITHDRAW} coins`)
       return
     }
 
-    if (amount > coins) {
+    if (Number(amount) > coins) {
       alert("Insufficient balance")
       return
     }
@@ -26,11 +28,9 @@ export default function WithdrawScreen() {
     try {
       setStatus("submitting")
 
-      // 🔜 Later we connect to backend
       setTimeout(() => {
         setStatus("pending")
       }, 1000)
-
     } catch (err) {
       setStatus("error")
     }
@@ -41,13 +41,13 @@ export default function WithdrawScreen() {
       window.Telegram.WebApp.ready()
     }
   }, [])
-  
+
   const buyCoins = () => {
     const invoiceLink = "YOUR_INVOICE_LINK_FROM_BACKEND"
-  
+
     if (window.Telegram?.WebApp) {
-      window.Telegram.WebApp.openInvoice(invoiceLink, (status) => {
-        if (status === "paid") {
+      window.Telegram.WebApp.openInvoice(invoiceLink, (invoiceStatus) => {
+        if (invoiceStatus === "paid") {
           alert("Payment successful! Coins will be credited shortly.")
         } else {
           alert("Payment cancelled or failed.")
@@ -55,82 +55,79 @@ export default function WithdrawScreen() {
       })
     }
   }
-  
-  return (
-    <div style={{ maxWidth: 400, margin: "40px auto", textAlign: "center" }}>
-      <h2>Withdraw Coins</h2>
 
-      <div style={{ background: "#f5f5f5", padding: 15, borderRadius: 10 }}>
-        <p><strong>Available Coins:</strong> {coins}</p>
-        <p><strong>Minimum Withdrawal:</strong> {MIN_WITHDRAW} coins</p>
-        <p style={{ fontSize: 12, color: "#666" }}>
+  return (
+    <div className="withdraw-screen">
+      <h1 className="withdraw-screen__title">Withdraw Coins</h1>
+
+      <div className="withdraw-screen__info card">
+        <div className="withdraw-screen__info-row">
+          <span className="withdraw-screen__info-label">Available</span>
+          <span className="withdraw-screen__info-value">{coins} coins</span>
+        </div>
+        <div className="withdraw-screen__info-row">
+          <span className="withdraw-screen__info-label">Minimum</span>
+          <span className="withdraw-screen__info-value">{MIN_WITHDRAW} coins</span>
+        </div>
+        <p className="withdraw-screen__info-note">
           Withdrawals are reviewed manually within 24 hours.
         </p>
       </div>
 
-      {/* BUY COINS BUTTON */}
       <button
+        type="button"
         onClick={buyCoins}
-        style={{
-          width: "100%",
-          padding: 12,
-          borderRadius: 8,
-          marginBottom: 20,
-          fontSize: 16,
-          cursor: "pointer",
-        }}
+        className="btn-primary withdraw-screen__buy-btn"
       >
         Buy Coins
       </button>
 
       {status !== "pending" && (
-        <form onSubmit={handleSubmit} style={{ marginTop: 20 }}>
+        <form onSubmit={handleSubmit} className="withdraw-screen__form">
           <input
             type="number"
-            placeholder="Amount"
+            placeholder="Amount to withdraw"
             value={amount}
-            onChange={(e) => setAmount(Number(e.target.value))}
+            onChange={(e) => setAmount(e.target.value)}
             required
-            style={inputStyle}
+            min={MIN_WITHDRAW}
+            max={coins}
+            className="withdraw-screen__input"
           />
 
           <input
             type="text"
-            placeholder="Wallet Address"
+            placeholder="Wallet address"
             value={wallet}
             onChange={(e) => setWallet(e.target.value)}
             required
-            style={inputStyle}
+            className="withdraw-screen__input"
           />
 
-          <button type="submit" style={buttonStyle}>
+          <button
+            type="submit"
+            disabled={status === "submitting"}
+            className="btn-primary withdraw-screen__submit-btn"
+          >
             {status === "submitting" ? "Submitting..." : "Request Withdrawal"}
           </button>
         </form>
       )}
 
       {status === "pending" && (
-        <div style={{ marginTop: 20, color: "orange" }}>
-          <h3>Request Submitted</h3>
-          <p>Status: Pending Review</p>
+        <div className="withdraw-screen__pending card">
+          <h3 className="withdraw-screen__pending-title">Request Submitted</h3>
+          <p className="withdraw-screen__pending-status">Status: Pending Review</p>
         </div>
       )}
+
+      <button
+        type="button"
+        className="btn-secondary withdraw-screen__back"
+        onClick={() => navigate("/")}
+      >
+        ← Back to Game
+      </button>
     </div>
   )
-}
-
-const inputStyle = {
-  width: "100%",
-  padding: 10,
-  marginBottom: 10,
-  borderRadius: 6,
-  border: "1px solid #ccc",
-}
-
-const buttonStyle = {
-  width: "100%",
-  padding: 12,
-  borderRadius: 8,
-  fontSize: 16,
-  cursor: "pointer",
 }

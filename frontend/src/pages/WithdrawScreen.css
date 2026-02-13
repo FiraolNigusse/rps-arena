@@ -1,0 +1,104 @@
+.withdraw-screen {
+  max-width: 400px;
+  margin: 0 auto;
+  padding: 2rem 0;
+  text-align: center;
+}
+
+.withdraw-screen__title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+}
+
+.withdraw-screen__info {
+  text-align: left;
+  margin-bottom: 1.5rem;
+}
+
+.withdraw-screen__info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.withdraw-screen__info-label {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.withdraw-screen__info-value {
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.withdraw-screen__info-note {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin: 1rem 0 0;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+
+.withdraw-screen__buy-btn {
+  width: 100%;
+  padding: 1rem;
+  margin-bottom: 2rem;
+}
+
+.withdraw-screen__form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  text-align: left;
+}
+
+.withdraw-screen__input {
+  width: 100%;
+  padding: 1rem 1.25rem;
+  font-size: 1rem;
+  font-family: inherit;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  color: var(--text-primary);
+  transition: border-color 0.2s ease;
+}
+
+.withdraw-screen__input::placeholder {
+  color: var(--text-muted);
+}
+
+.withdraw-screen__input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+.withdraw-screen__submit-btn {
+  width: 100%;
+  padding: 1rem;
+  margin-top: 0.5rem;
+}
+
+.withdraw-screen__pending {
+  margin: 2rem 0;
+  padding: 1.5rem;
+}
+
+.withdraw-screen__pending-title {
+  font-size: 1.1rem;
+  margin-bottom: 0.5rem;
+}
+
+.withdraw-screen__pending-status {
+  color: var(--warning);
+  font-size: 0.95rem;
+}
+
+.withdraw-screen__back {
+  width: 100%;
+  margin-top: 2rem;
+  padding: 0.875rem;
+}

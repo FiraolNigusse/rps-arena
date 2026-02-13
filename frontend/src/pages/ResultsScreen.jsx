@@ -1,18 +1,20 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useLocation, useNavigate } from "react-router-dom"
 import { useEffect, useState } from "react"
+import "./ResultsScreen.css"
 
 export default function ResultsScreen() {
   const location = useLocation()
   const navigate = useNavigate()
 
-  const { playerMove, opponentMove } = location.state
+  const { playerMove, opponentMove } = location.state || {}
 
   const [result, setResult] = useState("")
   const [coins, setCoins] = useState(100)
   const [rating, setRating] = useState(1200)
 
   useEffect(() => {
+    if (!playerMove || !opponentMove) return
     const r = determineWinner(playerMove, opponentMove)
     setResult(r)
 
@@ -22,51 +24,70 @@ export default function ResultsScreen() {
     } else if (r === "lose") {
       animateValue(setRating, 1200, 1195)
     }
-  }, [])
+  }, [playerMove, opponentMove])
 
   const playAgain = () => {
     navigate("/")
   }
 
+  if (!playerMove || !opponentMove) {
+    return (
+      <div className="results-screen">
+        <p className="results-screen__error">No match data. <button type="button" className="btn-secondary" onClick={() => navigate("/")}>Go to game</button></p>
+      </div>
+    )
+  }
+
   return (
-    <div style={{ textAlign: "center", marginTop: 40 }}>
-      <h2>Result</h2>
+    <div className="results-screen">
+      <h1 className="results-screen__title">Result</h1>
 
-      <p>Your move: {playerMove}</p>
-      <p>Opponent move: {opponentMove}</p>
+      <div className="results-screen__moves">
+        <div className="results-screen__move-card">
+          <span className="results-screen__move-emoji">{moveEmoji(playerMove)}</span>
+          <span className="results-screen__move-label">You</span>
+          <span className="results-screen__move-value">{playerMove}</span>
+        </div>
+        <span className="results-screen__vs">vs</span>
+        <div className="results-screen__move-card">
+          <span className="results-screen__move-emoji">{moveEmoji(opponentMove)}</span>
+          <span className="results-screen__move-label">Opponent</span>
+          <span className="results-screen__move-value">{opponentMove}</span>
+        </div>
+      </div>
 
-      <h1 style={{ color: resultColor(result) }}>
+      <div className={`results-screen__result results-screen__result--${result}`}>
         {result.toUpperCase()}
-      </h1>
+      </div>
 
-      <p>Coins: {coins}</p>
-      <p>Rating: {rating}</p>
+      <div className="results-screen__stats">
+        <div className="results-screen__stat">
+          <span className="results-screen__stat-label">Coins</span>
+          <span className="results-screen__stat-value">{coins}</span>
+        </div>
+        <div className="results-screen__stat">
+          <span className="results-screen__stat-label">Rating</span>
+          <span className="results-screen__stat-value">{rating}</span>
+        </div>
+      </div>
 
-      <button
-        onClick={playAgain}
-        style={{
-          padding: "15px 30px",
-          fontSize: 16,
-          borderRadius: 10,
-          marginTop: 20,
-        }}
-      >
-        Play Again
-      </button>
-      <button
-        onClick={() => navigate("/withdraw")}
-        style={{
-        padding: "12px 25px",
-        fontSize: 14,
-        borderRadius: 8,
-        marginTop: 10,
-  }}
->
-  Withdraw Coins
-</button>
-
+      <div className="results-screen__actions">
+        <button type="button" className="btn-primary" onClick={playAgain}>
+          Play Again
+        </button>
+        <button type="button" className="btn-secondary" onClick={() => navigate("/withdraw")}>
+          Withdraw Coins
+        </button>
+      </div>
     </div>
   )
+}
+
+function moveEmoji(move) {
+  if (move === "rock") return "🪨"
+  if (move === "paper") return "📄"
+  if (move === "scissors") return "✂️"
+  return "❓"
 }
 
 function determineWinner(player, opponent) {
@@ -90,10 +111,4 @@ function animateValue(setter, start, end) {
     setter(current)
     if (current === end) clearInterval(interval)
   }, 30)
-}
-
-function resultColor(result) {
-  if (result === "win") return "green"
-  if (result === "lose") return "red"
-  return "gray"
 }
