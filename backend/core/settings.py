@@ -99,6 +99,11 @@ if not CORS_ALLOW_ALL_ORIGINS:
     _origins = config("CORS_ALLOWED_ORIGINS", default="")
     CORS_ALLOWED_ORIGINS = [s.strip() for s in _origins.split(",") if s.strip()] if _origins else []
 
+# CSRF trusted origins - required when frontend is on a different origin (e.g. ngrok)
+_csrf_origins = config("CSRF_TRUSTED_ORIGINS", default="")
+if _csrf_origins:
+    CSRF_TRUSTED_ORIGINS = [s.strip() for s in _csrf_origins.split(",") if s.strip()]
+
 # Production security
 if not DEBUG:
     SECURE_BROWSER_XSS_FILTER = True
