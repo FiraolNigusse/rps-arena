@@ -1,10 +1,14 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useEffect, useState } from "react";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
 import { initTelegram } from "./telegram";
 import { apiPost, setToken } from "./api/api";
+import { UserProvider } from "./context/UserContext";
 
+import HomeScreen from "./pages/HomeScreen";
+import WalletScreen from "./pages/WalletScreen";
+import PlayScreen from "./pages/PlayScreen";
 import MatchScreen from "./pages/MatchScreen";
 import ResultsScreen from "./pages/ResultsScreen";
 import WithdrawScreen from "./pages/WithdrawScreen";
@@ -46,15 +50,21 @@ function App() {
   }
 
   return (
-    <BrowserRouter>
-      <div className="app-container">
-        <Routes>
-          <Route path="/" element={<MatchScreen />} />
-          <Route path="/results" element={<ResultsScreen />} />
-          <Route path="/withdraw" element={<WithdrawScreen />} />
-        </Routes>
-      </div>
-    </BrowserRouter>
+    <UserProvider initialUser={user}>
+      <BrowserRouter>
+        <div className="app-container">
+          <Routes>
+            <Route path="/" element={<HomeScreen />} />
+            <Route path="/wallet" element={<WalletScreen />} />
+            <Route path="/play" element={<PlayScreen />} />
+            <Route path="/match" element={<MatchScreen />} />
+            <Route path="/results" element={<ResultsScreen />} />
+            <Route path="/withdraw" element={<WithdrawScreen />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </div>
+      </BrowserRouter>
+    </UserProvider>
   );
 }
 

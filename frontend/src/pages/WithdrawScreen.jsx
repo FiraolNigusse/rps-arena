@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
-import { apiPost } from "../api/api"
+import { apiPost, apiGet } from "../api/api"
 import "./WithdrawScreen.css"
+
+const MIN_WITHDRAW = 50
 
 export default function WithdrawScreen() {
   const navigate = useNavigate()
@@ -10,14 +12,19 @@ export default function WithdrawScreen() {
   const [wallet, setWallet] = useState("")
   const [status, setStatus] = useState("idle")
   const [error, setError] = useState("")
-
-  const MIN_WITHDRAW = 50
+  const [withdrawals, setWithdrawals] = useState([])
 
   useEffect(() => {
     apiPost("/wallet/balance/", {})
       .then((res) => setCoins(res.coins ?? 0))
       .catch(() => setCoins(0))
   }, [])
+
+  useEffect(() => {
+    apiGet("/withdraw/list/")
+      .then((res) => setWithdrawals(res.withdrawals ?? []))
+      .catch(() => setWithdrawals([]))
+  }, [status])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -37,107 +44,95 @@ export default function WithdrawScreen() {
       setStatus("submitting")
       await apiPost("/withdraw/request/", { amount: Number(amount), wallet })
       setStatus("pending")
+      setAmount("")
+      setWallet("")
+      apiGet("/withdraw/list/").then((res) => setWithdrawals(res.withdrawals ?? []))
     } catch (err) {
       setStatus("error")
       setError(err?.data?.error || "Request failed")
     }
   }
 
-  useEffect(() => {
-    if (window.Telegram?.WebApp) {
-      window.Telegram.WebApp.ready()
-    }
-  }, [])
-
-  const buyCoins = () => {
-    const invoiceLink = "YOUR_INVOICE_LINK_FROM_BACKEND"
-
-    if (window.Telegram?.WebApp) {
-      window.Telegram.WebApp.openInvoice(invoiceLink, (invoiceStatus) => {
-        if (invoiceStatus === "paid") {
-          alert("Payment successful! Coins will be credited shortly.")
-        } else {
-          alert("Payment cancelled or failed.")
-        }
-      })
+  const formatDate = (iso) => {
+    try {
+      return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })
+    } catch (_) {
+      return iso
     }
   }
 
+  const canWithdraw = coins >= MIN_WITHDRAW
+
   return (
     <div className="withdraw-screen">
-      <h1 className="withdraw-screen__title">Withdraw Coins</h1>
+      <h1 className="withdraw-screen__title">Withdraw</h1>
 
       <div className="withdraw-screen__info card">
         <div className="withdraw-screen__info-row">
-          <span className="withdraw-screen__info-label">Available</span>
+          <span className="withdraw-screen__info-label">Current balance</span>
           <span className="withdraw-screen__info-value">{coins} coins</span>
         </div>
-        <div className="withdraw-screen__info-row">
-          <span className="withdraw-screen__info-label">Minimum</span>
-          <span className="withdraw-screen__info-value">{MIN_WITHDRAW} coins</span>
-        </div>
         <p className="withdraw-screen__info-note">
-          Withdrawals are reviewed manually within 24 hours.
+          Minimum withdrawal: {MIN_WITHDRAW} coins. Withdrawals are reviewed manually; status is shown below.
         </p>
       </div>
 
-      <button
-        type="button"
-        onClick={buyCoins}
-        className="btn-primary withdraw-screen__buy-btn"
-      >
-        Buy Coins
-      </button>
-
-      {status !== "pending" && (
-        <form onSubmit={handleSubmit} className="withdraw-screen__form">
-          <input
-            type="number"
-            placeholder="Amount to withdraw"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            required
-            min={MIN_WITHDRAW}
-            max={coins}
-            className="withdraw-screen__input"
-          />
-
-          <input
-            type="text"
-            placeholder="Wallet address"
-            value={wallet}
-            onChange={(e) => setWallet(e.target.value)}
-            required
-            className="withdraw-screen__input"
-          />
-
-          <button
-            type="submit"
-            disabled={status === "submitting"}
-            className="btn-primary withdraw-screen__submit-btn"
-          >
-            {status === "submitting" ? "Submitting..." : "Request Withdrawal"}
-          </button>
-        </form>
-      )}
+      <form onSubmit={handleSubmit} className="withdraw-screen__form">
+        <input
+          type="number"
+          placeholder="Amount to withdraw"
+          value={amount}
+          onChange={(e) => setAmount(e.target.value)}
+          required
+          min={MIN_WITHDRAW}
+          max={coins}
+          className="withdraw-screen__input"
+        />
+        <input
+          type="text"
+          placeholder="Wallet address"
+          value={wallet}
+          onChange={(e) => setWallet(e.target.value)}
+          required
+          className="withdraw-screen__input"
+        />
+        <button
+          type="submit"
+          disabled={status === "submitting" || !canWithdraw}
+          className="btn-primary withdraw-screen__submit-btn"
+        >
+          {status === "submitting" ? "Submitting..." : "Request Withdrawal"}
+        </button>
+      </form>
 
       {status === "error" && error && (
         <p className="withdraw-screen__error">{error}</p>
       )}
 
-      {status === "pending" && (
-        <div className="withdraw-screen__pending card">
-          <h3 className="withdraw-screen__pending-title">Request Submitted</h3>
-          <p className="withdraw-screen__pending-status">Status: Pending Review</p>
-        </div>
-      )}
+      <div className="withdraw-screen__status-section">
+        <h3 className="withdraw-screen__status-title">Withdrawal status</h3>
+        <ul className="withdraw-screen__status-list">
+          {withdrawals.length === 0 && (
+            <li className="withdraw-screen__status-empty">No withdrawals yet</li>
+          )}
+          {withdrawals.map((w, i) => (
+            <li key={i} className="withdraw-screen__status-item">
+              <span>{w.amount} coins</span>
+              <span className={`withdraw-screen__status-badge withdraw-screen__status-badge--${w.status}`}>
+                {w.status}
+              </span>
+              <span className="withdraw-screen__status-date">{formatDate(w.date)}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
 
       <button
         type="button"
         className="btn-secondary withdraw-screen__back"
-        onClick={() => navigate("/")}
+        onClick={() => navigate("/wallet")}
       >
-        ← Back to Game
+        Back to Wallet
       </button>
     </div>
   )

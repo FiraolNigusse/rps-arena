@@ -1,6 +1,15 @@
 .match-screen {
+  position: relative;
   padding: 2rem 0;
   text-align: center;
+}
+
+.match-screen__back {
+  position: absolute;
+  top: 0.5rem;
+  left: 0;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
 }
 
 .match-screen__title {

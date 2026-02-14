@@ -1,0 +1,121 @@
+.wallet-screen {
+  max-width: 400px;
+  margin: 0 auto;
+  padding: 2rem 0;
+  text-align: center;
+}
+
+.wallet-screen__title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+}
+
+.wallet-screen__balance {
+  text-align: center;
+  margin-bottom: 1.5rem;
+  padding: 1.25rem;
+}
+
+.wallet-screen__balance-label {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-bottom: 0.35rem;
+}
+
+.wallet-screen__balance-value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.wallet-screen__info {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin-bottom: 1.5rem;
+  line-height: 1.5;
+}
+
+.wallet-screen__buy {
+  width: 100%;
+  padding: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.wallet-screen__withdraw {
+  width: 100%;
+  padding: 1rem;
+  margin-bottom: 0.25rem;
+}
+
+.wallet-screen__withdraw-hint {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-bottom: 1.5rem;
+}
+
+.wallet-screen__history {
+  text-align: left;
+  margin-bottom: 1.5rem;
+}
+
+.wallet-screen__history-title {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.wallet-screen__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.wallet-screen__list-empty {
+  padding: 1.25rem;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.wallet-screen__list-item {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.9rem;
+}
+
+.wallet-screen__list-item:last-child {
+  border-bottom: none;
+}
+
+.wallet-screen__list-type {
+  color: var(--text-primary);
+}
+
+.wallet-screen__list-amount.positive {
+  color: var(--success);
+  font-weight: 600;
+}
+
+.wallet-screen__list-amount.negative {
+  color: var(--text-secondary);
+}
+
+.wallet-screen__list-date {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+.wallet-screen__back {
+  width: 100%;
+  padding: 0.875rem;
+}

@@ -2,15 +2,17 @@
 /* eslint-disable react-hooks/purity */
 /* eslint-disable react-hooks/immutability */
 import { useEffect, useState } from "react"
-import { useNavigate } from "react-router-dom"
-import { apiPost, getToken } from "../api/api"
+import { useNavigate, useLocation } from "react-router-dom"
+import { apiPost } from "../api/api"
 import "./MatchScreen.css"
 
 export default function MatchScreen() {
   const navigate = useNavigate()
+  const location = useLocation()
+  const stake = location.state?.stake ?? 50
 
   const [selectedMove, setSelectedMove] = useState(null)
-  const [timeLeft, setTimeLeft] = useState(10)
+  const [timeLeft, setTimeLeft] = useState(2)
   const [matchState, setMatchState] = useState("choosing")
 
   useEffect(() => {
@@ -40,33 +42,46 @@ export default function MatchScreen() {
     setMatchState("waiting")
 
     try {
-      const data = await apiPost("/match/submit/", { move })
+      const data = await apiPost("/match/submit/", { move, stake })
 
       navigate("/results", {
         state: {
           playerMove: data.player_move,
           opponentMove: data.opponent_move,
           result: data.result,
+          coinsDelta: data.coins_delta,
+          ratingDelta: data.rating_delta,
+          newBalance: data.new_balance,
+          newRating: data.new_rating,
         },
       })
     } catch (err) {
       console.error(err)
+      setMatchState("choosing")
+      setSelectedMove(null)
     }
   }
 
   return (
     <div className="match-screen">
+      <button
+        type="button"
+        className="match-screen__back btn-secondary"
+        onClick={() => navigate("/play")}
+      >
+        Back
+      </button>
       <h1 className="match-screen__title">RPS Arena</h1>
       <p className="match-screen__subtitle">Choose your move</p>
 
-      <div className={`match-screen__timer ${timeLeft <= 3 ? "match-screen__timer--urgent" : ""}`}>
+      <div className={`match-screen__timer ${timeLeft <= 1 ? "match-screen__timer--urgent" : ""}`}>
         {timeLeft}
       </div>
 
       <div className="match-screen__status">
         {matchState === "choosing" && <span>Pick before time runs out</span>}
         {matchState === "waiting" && (
-          <span className="match-screen__status--waiting">Waiting for opponent...</span>
+          <span className="match-screen__status--waiting">Opponent has chosen</span>
         )}
       </div>
 

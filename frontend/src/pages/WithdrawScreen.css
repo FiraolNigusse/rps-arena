@@ -41,12 +41,6 @@
   border-top: 1px solid var(--border);
 }
 
-.withdraw-screen__buy-btn {
-  width: 100%;
-  padding: 1rem;
-  margin-bottom: 2rem;
-}
-
 .withdraw-screen__form {
   display: flex;
   flex-direction: column;
@@ -82,25 +76,80 @@
   margin-top: 0.5rem;
 }
 
-.withdraw-screen__pending {
-  margin: 2rem 0;
-  padding: 1.5rem;
-}
-
-.withdraw-screen__pending-title {
-  font-size: 1.1rem;
-  margin-bottom: 0.5rem;
-}
-
-.withdraw-screen__pending-status {
-  color: var(--warning);
-  font-size: 0.95rem;
-}
-
 .withdraw-screen__error {
   color: var(--danger);
   font-size: 0.9rem;
   margin-top: 1rem;
+}
+
+.withdraw-screen__status-section {
+  text-align: left;
+  margin: 1.5rem 0;
+}
+
+.withdraw-screen__status-title {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.withdraw-screen__status-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.withdraw-screen__status-empty {
+  padding: 1.25rem;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.withdraw-screen__status-item {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.9rem;
+}
+
+.withdraw-screen__status-item:last-child {
+  border-bottom: none;
+}
+
+.withdraw-screen__status-badge {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  font-weight: 600;
+}
+
+.withdraw-screen__status-badge--pending {
+  background: rgba(255, 179, 71, 0.2);
+  color: var(--warning);
+}
+
+.withdraw-screen__status-badge--approved {
+  background: rgba(0, 212, 170, 0.2);
+  color: var(--success);
+}
+
+.withdraw-screen__status-badge--rejected {
+  background: rgba(255, 77, 106, 0.15);
+  color: var(--danger);
+}
+
+.withdraw-screen__status-date {
+  color: var(--text-muted);
+  font-size: 0.8rem;
 }
 
 .withdraw-screen__back {

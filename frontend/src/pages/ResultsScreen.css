@@ -90,28 +90,35 @@
   border: 1px solid var(--border);
 }
 
-.results-screen__stats {
+.results-screen__changes {
   display: flex;
   justify-content: center;
   gap: 2rem;
   margin-bottom: 2rem;
 }
 
-.results-screen__stat {
+.results-screen__change {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
 }
 
-.results-screen__stat-label {
+.results-screen__change-label {
   font-size: 0.8rem;
   color: var(--text-muted);
 }
 
-.results-screen__stat-value {
+.results-screen__change-value {
   font-size: 1.25rem;
   font-weight: 700;
-  color: var(--accent);
+}
+
+.results-screen__change-value.positive {
+  color: var(--success);
+}
+
+.results-screen__change-value.negative {
+  color: var(--text-secondary);
 }
 
 .results-screen__actions {

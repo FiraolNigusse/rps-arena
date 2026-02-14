@@ -4,19 +4,21 @@ import random
 
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_POST, require_GET
 from django.utils import timezone
 from django.db.models import Sum
 from datetime import timedelta
 
 
-from .models import User, Match, Payment, Withdrawal
+from .models import User, Match, Payment, Withdrawal, Transaction, Rating
 from game.services.auth import jwt_required
 from game.services.telegram_auth import verify_telegram_data
 from game.services.wallet import add_coins, deduct_coins
 from game.services.rps_engine import validate_move, decide_round_winner
 from game.services.round_state import start_round, submit_move, get_round, end_round
 from game.services.matchmaking import enqueue_player
+from game.services.payout import payout_match
+from game.services.rating_service import expected_score, update_elo
 
 # -------------------------
 # Telegram login
@@ -44,6 +46,7 @@ def telegram_login(request):
         telegram_id=telegram_id,
         defaults={"username": username},
     )
+    rating_obj, _ = Rating.objects.get_or_create(user=user, defaults={"value": 1000})
 
     from game.services.jwt_service import generate_jwt
     token = generate_jwt(user)
@@ -55,6 +58,7 @@ def telegram_login(request):
             "telegram_id": user.telegram_id,
             "username": user.username,
             "coins": user.coins,
+            "rating": rating_obj.value,
         },
         "new_user": created,
     })
@@ -66,6 +70,23 @@ def telegram_login(request):
 @require_POST
 def wallet_balance(request):
     return JsonResponse({"coins": request.user.coins})
+
+
+@jwt_required
+@require_GET
+def wallet_transactions(request):
+    """List transactions for current user: type, amount, date."""
+    txs = Transaction.objects.filter(user=request.user).order_by("-created_at")[:50]
+    return JsonResponse({
+        "transactions": [
+            {
+                "type": tx.type,
+                "amount": tx.amount,
+                "date": tx.created_at.isoformat(),
+            }
+            for tx in txs
+        ]
+    })
 
 
 @jwt_required
@@ -141,7 +162,7 @@ def submit_move_view(request):
     ).count()
 
     if recent_matches > 10:
-        return Response({"error": "Too many matches. Slow down."}, status=429)
+        return JsonResponse({"error": "Too many matches. Slow down."}, status=429)
 
     match = Match.objects.get(id=match_id)
 
@@ -235,20 +256,35 @@ def telegram_webhook(request):
 
     return JsonResponse({"status": "ignored"})
 
+# Stake options (fixed values only, Phase 1)
+STAKE_OPTIONS = [50, 100, 200]
+AI_OPPONENT_RATING = 1000
+K_FACTOR = 32
+
+
 # -------------------------
 # Quick-play vs AI (for Telegram Mini App)
 # -------------------------
 @jwt_required
 @require_POST
 def quick_play_submit(request):
-    """Single-round RPS vs random opponent. Returns result for ResultsScreen."""
-    import random
-
+    """Single-round RPS vs random opponent. Deducts stake, pays out on win, updates rating."""
     body = json.loads(request.body)
     move = body.get("move")
+    stake = int(body.get("stake", 0))
 
     if not validate_move(move):
         return JsonResponse({"error": "Invalid move"}, status=400)
+
+    if stake not in STAKE_OPTIONS:
+        return JsonResponse({"error": "Invalid stake"}, status=400)
+
+    if request.user.coins < stake:
+        return JsonResponse({"error": "Insufficient balance"}, status=400)
+
+    # Deduct stake
+    deduct_coins(request.user, stake, tx_type="stake")
+    balance_after_stake = request.user.coins
 
     opponent_move = random.choice(["rock", "paper", "scissors"])
     result = decide_round_winner(move, opponent_move)
@@ -257,10 +293,30 @@ def quick_play_submit(request):
     result_map = {"player1": "win", "player2": "lose", "draw": "draw"}
     result_str = result_map.get(result, "draw")
 
+    if result_str == "win":
+        payout_match(request.user, stake)
+        request.user.refresh_from_db()
+        coins_delta = request.user.coins - balance_after_stake
+    else:
+        coins_delta = -stake
+
+    # Rating: get or create, then update vs AI (fixed 1000)
+    rating_obj, _ = Rating.objects.get_or_create(user=request.user, defaults={"value": 1000})
+    old_rating = rating_obj.value
+    expected = expected_score(old_rating, AI_OPPONENT_RATING)
+    actual = 1 if result_str == "win" else (0.5 if result_str == "draw" else 0)
+    rating_delta = int(K_FACTOR * (actual - expected))
+    rating_obj.value = max(0, old_rating + rating_delta)
+    rating_obj.save()
+
     return JsonResponse({
         "player_move": move,
         "opponent_move": opponent_move,
         "result": result_str,
+        "coins_delta": coins_delta,
+        "rating_delta": rating_delta,
+        "new_balance": request.user.coins,
+        "new_rating": rating_obj.value,
     })
 
 
@@ -303,3 +359,20 @@ def request_withdrawal(request):
     )
 
     return JsonResponse({"message": "Withdrawal request submitted"})
+
+
+@jwt_required
+@require_GET
+def withdraw_list(request):
+    """List withdrawals for current user: amount, status, date."""
+    withdrawals = Withdrawal.objects.filter(user=request.user).order_by("-requested_at")[:20]
+    return JsonResponse({
+        "withdrawals": [
+            {
+                "amount": w.amount,
+                "status": w.status,
+                "date": w.requested_at.isoformat(),
+            }
+            for w in withdrawals
+        ]
+    })

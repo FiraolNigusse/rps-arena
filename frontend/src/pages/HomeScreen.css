@@ -1,0 +1,68 @@
+.home-screen {
+  padding: 2rem 0;
+  text-align: center;
+  max-width: 360px;
+  margin: 0 auto;
+}
+
+.home-screen__identity {
+  margin-bottom: 2rem;
+}
+
+.home-screen__label {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.25rem;
+}
+
+.home-screen__username {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.home-screen__stats {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-bottom: 2.5rem;
+}
+
+.home-screen__stat {
+  flex: 1;
+  min-width: 0;
+  padding: 1rem 1.25rem;
+  text-align: center;
+}
+
+.home-screen__stat-label {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.35rem;
+}
+
+.home-screen__stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.home-screen__play {
+  width: 100%;
+  padding: 1.25rem 2rem;
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+}
+
+.home-screen__wallet {
+  width: 100%;
+  padding: 0.75rem;
+  font-size: 0.9rem;
+}
