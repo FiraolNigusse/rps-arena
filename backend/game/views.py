@@ -66,12 +66,14 @@ def telegram_login(request):
 # -------------------------
 # Wallet endpoints
 # -------------------------
+@csrf_exempt
 @jwt_required
 @require_POST
 def wallet_balance(request):
     return JsonResponse({"coins": request.user.coins})
 
 
+@csrf_exempt
 @jwt_required
 @require_GET
 def wallet_transactions(request):
@@ -89,6 +91,7 @@ def wallet_transactions(request):
     })
 
 
+@csrf_exempt
 @jwt_required
 @require_POST
 def wallet_add_coins(request):
@@ -103,6 +106,7 @@ def wallet_add_coins(request):
     })
 
 
+@csrf_exempt
 @jwt_required
 @require_POST
 def wallet_deduct_coins(request):
@@ -119,6 +123,7 @@ def wallet_deduct_coins(request):
 # -------------------------
 # Find match with IP tracking
 # -------------------------
+@csrf_exempt
 @jwt_required
 @require_POST
 def find_match(request):
@@ -143,6 +148,7 @@ def find_match(request):
 # -------------------------
 # Submit move
 # -------------------------
+@csrf_exempt
 @jwt_required
 @require_POST
 def submit_move_view(request):
@@ -265,6 +271,7 @@ K_FACTOR = 32
 # -------------------------
 # Quick-play vs AI (for Telegram Mini App)
 # -------------------------
+@csrf_exempt
 @jwt_required
 @require_POST
 def quick_play_submit(request):
@@ -323,6 +330,7 @@ def quick_play_submit(request):
 # -------------------------
 # Request withdrawal
 # -------------------------
+@csrf_exempt
 @jwt_required
 @require_POST
 def request_withdrawal(request):
@@ -361,6 +369,7 @@ def request_withdrawal(request):
     return JsonResponse({"message": "Withdrawal request submitted"})
 
 
+@csrf_exempt
 @jwt_required
 @require_GET
 def withdraw_list(request):
