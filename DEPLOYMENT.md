@@ -29,7 +29,20 @@
 | `CORS_ALLOWED_ORIGINS` | Yes | Frontend URL, e.g. `https://your-app.vercel.app` |
 | `CSRF_TRUSTED_ORIGINS` | Yes | Same as CORS, e.g. `https://your-app.vercel.app` |
 
-After deploy, set `ALLOWED_HOSTS` to your actual Render URL (e.g. `rps-arena-api.onrender.com`).
+After deploy, set `ALLOWED_HOSTS` to your actual Render URL (e.g. `rps-arena-94pz.onrender.com`).
+
+### ⚠️ "Authentication failed" after deployment
+
+1. **CORS / Origin** – Add your **exact** Vercel URL to Render env vars (no trailing slash):
+   - `CORS_ALLOWED_ORIGINS` = `https://rps-arena-xxxx.vercel.app`
+   - `CSRF_TRUSTED_ORIGINS` = `https://rps-arena-xxxx.vercel.app`
+   - Redeploy the Render service after changing these.
+
+2. **Open from Telegram** – The app must be opened via your Telegram bot (Menu → Web App), not by pasting the Vercel URL in a browser.
+
+3. **Vercel env** – Ensure `VITE_API_URL` is set in Vercel (e.g. `https://rps-arena-94pz.onrender.com/api`) and redeploy.
+
+4. **Telegram Bot** – In @BotFather, set your bot’s Web App URL to the Vercel URL.
 
 ---
 

@@ -35,8 +35,15 @@ function App() {
         setUser(res.user);
         setStatus("Logged in");
       })
-      .catch(() => {
-        setStatus("Authentication failed");
+      .catch((err) => {
+        console.error("Auth failed:", err?.status, err?.data);
+        if (err?.status === 0) {
+          setStatus("Cannot reach server. Check CORS / API URL.");
+        } else if (err?.status === 403) {
+          setStatus("Invalid Telegram data. Open from Telegram.");
+        } else {
+          setStatus("Authentication failed");
+        }
       });
   }, []);
 

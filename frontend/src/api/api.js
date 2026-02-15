@@ -26,14 +26,22 @@ export function getToken() {
 
 async function request(path, method, body = null) {
   const authToken = getToken();
-  const res = await fetch(`${API_BASE}${path}`, {
-    method,
-    headers: {
-      "Content-Type": "application/json",
-      ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
-    },
-    body: body ? JSON.stringify(body) : null,
-  });
+  let res;
+  try {
+    res = await fetch(`${API_BASE}${path}`, {
+      method,
+      headers: {
+        "Content-Type": "application/json",
+        ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+      },
+      body: body ? JSON.stringify(body) : null,
+    });
+  } catch (e) {
+    const err = new Error(e?.message || "Network error");
+    err.status = 0;
+    err.data = null;
+    throw err;
+  }
 
   if (!res.ok) {
     const err = new Error("API request failed");
