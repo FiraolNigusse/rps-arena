@@ -26,10 +26,12 @@
 | `DATABASE_URL` | Yes | Auto-set by Render if using their PostgreSQL |
 | `TELEGRAM_BOT_TOKEN` | Yes | From @BotFather |
 | `JWT_SECRET_KEY` | Yes | Random secret for JWT |
-| `CORS_ALLOWED_ORIGINS` | Yes | Frontend URL, e.g. `https://your-app.vercel.app` |
-| `CSRF_TRUSTED_ORIGINS` | Yes | Same as CORS, e.g. `https://your-app.vercel.app` |
+| `CORS_ALLOWED_ORIGINS` | Yes | Frontend URL, **no trailing slash**, e.g. `https://rps-arena-virid.vercel.app` |
+| `CSRF_TRUSTED_ORIGINS` | Yes | Same as CORS, **no trailing slash** |
 
 After deploy, set `ALLOWED_HOSTS` to your actual Render URL (e.g. `rps-arena-94pz.onrender.com`).
+
+**Important:** For `CORS_ALLOWED_ORIGINS` and `CSRF_TRUSTED_ORIGINS`, use the exact frontend URL **with no trailing slash** (e.g. `https://rps-arena-virid.vercel.app`). The backend now normalizes trailing slashes, but matching the browser’s Origin is more reliable without them.
 
 ### ⚠️ Stuck on "Initializing..." or "Connecting..."
 

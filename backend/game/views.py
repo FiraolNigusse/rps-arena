@@ -28,7 +28,11 @@ def telegram_login(request):
     if request.method != "POST":
         return JsonResponse({"error": "Invalid method"}, status=405)
 
-    body = json.loads(request.body)
+    try:
+        body = json.loads(request.body or "{}")
+    except json.JSONDecodeError:
+        return JsonResponse({"error": "Invalid JSON"}, status=400)
+
     init_data = body.get("initData")
 
     if not init_data:

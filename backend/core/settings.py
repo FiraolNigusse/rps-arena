@@ -96,14 +96,21 @@ JWT_EXP_DELTA_SECONDS = config("JWT_EXP_DELTA_SECONDS", default=60 * 60 * 24, ca
 CORS_ALLOW_ALL_ORIGINS = config("CORS_ALLOW_ALL_ORIGINS", default=DEBUG, cast=bool)
 CORS_ALLOW_CREDENTIALS = True
 
+def _normalize_origins(value):
+    """Split, strip, and remove trailing slashes to match browser Origin header."""
+    if not value:
+        return []
+    return [s.strip().rstrip("/") for s in value.split(",") if s.strip()]
+
+
 if not CORS_ALLOW_ALL_ORIGINS:
     _origins = config("CORS_ALLOWED_ORIGINS", default="")
-    CORS_ALLOWED_ORIGINS = [s.strip() for s in _origins.split(",") if s.strip()] if _origins else []
+    CORS_ALLOWED_ORIGINS = _normalize_origins(_origins)
 
 # CSRF trusted origins - required when frontend is on a different origin (e.g. ngrok)
 _csrf_origins = config("CSRF_TRUSTED_ORIGINS", default="")
 if _csrf_origins:
-    CSRF_TRUSTED_ORIGINS = [s.strip() for s in _csrf_origins.split(",") if s.strip()]
+    CSRF_TRUSTED_ORIGINS = _normalize_origins(_csrf_origins)
 
 # Production security
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
