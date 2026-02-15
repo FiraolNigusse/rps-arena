@@ -57,6 +57,16 @@ After deploy, set `ALLOWED_HOSTS` to your actual Render URL (e.g. `rps-arena-94p
 
 5. **Telegram Bot** – In @BotFather, set your bot’s Web App URL to your production Vercel URL (e.g. `https://rps-arena-virid.vercel.app`).
 
+### ⚠️ "Invalid Telegram data. Open from Telegram."
+
+Shown when backend rejects `initData` (signature check fails). **Check Render logs** (Dashboard → your service → Logs) for one of:
+
+- **"Telegram auth: no hash in initData"** – Frontend didn’t send hash; ensure the app is opened from the bot (Menu → Web App), not by opening the Vercel URL in a browser.
+- **"Telegram auth: TELEGRAM_BOT_TOKEN not set"** – Set `TELEGRAM_BOT_TOKEN` in Render env exactly as in @BotFather (no extra spaces), then redeploy.
+- **"Telegram auth: hash mismatch"** – Token may be wrong, or initData format differs. Confirm `TELEGRAM_BOT_TOKEN` is the token for the same bot whose Web App URL points to your Vercel app; redeploy backend after any env change.
+
+The backend now tries both unquoted and raw value formats for the data-check string; if it still fails, the token is the most likely cause.
+
 ---
 
 ## Backend (Django)
