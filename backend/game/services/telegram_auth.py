@@ -122,7 +122,8 @@ def verify_telegram_data(init_data: str):
         logger.warning(f"  > CALC 3 (LoginWidget Style): {hash_login_unquoted}")
 
         if hmac.compare_digest(hash_login_unquoted, received_hash):
-             logger.warning("  !!! MATCH FOUND using Login Widget style. You might be using the wrong validation method for WebApp or vice versa.")
+             logger.warning("Telegram auth: MATCH FOUND using Login Widget style. Allowing auth.")
+             return parsed_data
 
         return None
 
