@@ -12,7 +12,7 @@
 1. Create a new **Web Service** on [Render](https://render.com)
 2. Connect your Git repo
 3. **Root directory**: `backend`
-4. **Build command**: `pip install -r requirements.txt && python manage.py collectstatic --noinput`
+4. **Build command**: `pip install -r requirements.txt && python manage.py migrate && python manage.py collectstatic --noinput`
 5. **Start command**: `gunicorn core.wsgi` (or leave blank to use Procfile)
 6. Add **PostgreSQL** in Render (or use external DB) and copy `DATABASE_URL`
 
