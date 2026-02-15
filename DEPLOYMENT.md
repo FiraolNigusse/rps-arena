@@ -31,6 +31,15 @@
 
 After deploy, set `ALLOWED_HOSTS` to your actual Render URL (e.g. `rps-arena-94pz.onrender.com`).
 
+### ⚠️ Stuck on "Initializing..." or "Connecting..."
+
+- **Render cold start**: On the free tier, Render spins down the backend after ~15 min of no traffic. The first request can take **30–60 seconds**. The app will show "Connecting..." and, if it takes too long, "Server is slow to start. Tap to try again." Tap the screen to retry.
+- If it never connects, check **Vercel** has `VITE_API_URL` set and you redeployed (see below).
+
+### ⚠️ "Cannot reach server. Check CORS / API URL."
+
+- **Vercel**: In Project → Settings → Environment Variables, add **`VITE_API_URL`** = `https://rps-arena-94pz.onrender.com/api` (use your real Render URL). Then **redeploy** (Deployments → ⋮ → Redeploy). Without this, the built app uses localhost and cannot reach the backend.
+
 ### ⚠️ "Authentication failed" after deployment
 
 1. **CORS / Origin** – Add your **exact** Vercel URL to Render env vars (no trailing slash):
@@ -40,9 +49,11 @@ After deploy, set `ALLOWED_HOSTS` to your actual Render URL (e.g. `rps-arena-94p
 
 2. **Open from Telegram** – The app must be opened via your Telegram bot (Menu → Web App), not by pasting the Vercel URL in a browser.
 
-3. **Vercel env** – Ensure `VITE_API_URL` is set in Vercel (e.g. `https://rps-arena-94pz.onrender.com/api`) and redeploy.
+3. **Multiple Vercel URLs** – If your bot opens a preview URL (e.g. `rps-arena-xxx-firaolnigusses-projects.vercel.app`), add that exact origin to `CORS_ALLOWED_ORIGINS` and `CSRF_TRUSTED_ORIGINS` on Render as well (comma-separated), or point the bot’s Web App URL to your production domain only: `https://rps-arena-virid.vercel.app`.
 
-4. **Telegram Bot** – In @BotFather, set your bot’s Web App URL to the Vercel URL.
+4. **Vercel env** – Ensure `VITE_API_URL` is set in Vercel (e.g. `https://rps-arena-94pz.onrender.com/api`) and **redeploy** so the new build uses it.
+
+5. **Telegram Bot** – In @BotFather, set your bot’s Web App URL to your production Vercel URL (e.g. `https://rps-arena-virid.vercel.app`).
 
 ---
 
