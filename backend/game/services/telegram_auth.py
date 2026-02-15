@@ -55,40 +55,75 @@ def verify_telegram_data(init_data: str):
         received_hash = parsed_data.pop("hash", None)
         parsed_data.pop("signature", None)
 
-        if getattr(settings, "DEBUG", False):
-            return parsed_data
+        # Early return in DEBUG mode can be disabled if we want to test hash validation locally
+        # if getattr(settings, "DEBUG", False):
+        #    return parsed_data
 
         if not received_hash:
             logger.warning("Telegram auth: no hash in initData")
             return None
 
-        if not _get_bot_token():
+        token = _get_bot_token()
+        if not token:
             logger.warning("Telegram auth: TELEGRAM_BOT_TOKEN not set")
             return None
 
-        # Try unquoted first (Telegram docs: data_check_string uses URL-decoded values)
-        if _check_hash(parsed_data, received_hash, use_unquote=True):
+        # Prepare check string
+        # Telegram docs say: "key=value" pairs sorted alphabetically
+        # Values should be UNQUOTED (decoded) for the check string? 
+        # Actually docs say: "data-check-string is a chain of all received fields, sorted alphabetically... 
+        # in the format key=<value> with a line feed character ('\n') as separator."
+        # And "received fields" usually implies the values as they are? 
+        # But previous working implementations often unquote.
+        # We will try both variations if needed, but for logging we will show the main one.
+
+        # Variation 1: Unquoted values (Standard for Web App?)
+        data_check_string_unquoted = "\n".join(
+            f"{k}={unquote(v)}" for k, v in sorted(parsed_data.items())
+        )
+        # Variation 2: Raw values
+        data_check_string_raw = "\n".join(
+            f"{k}={v}" for k, v in sorted(parsed_data.items())
+        )
+
+        # --- Calculations ---
+
+        # 1. Web App Style: HMAC-SHA256("WebAppData", token)
+        secret_key_webapp = hmac.new(b"WebAppData", token.encode("utf-8"), hashlib.sha256).digest()
+        hash_webapp_unquoted = hmac.new(secret_key_webapp, data_check_string_unquoted.encode("utf-8"), hashlib.sha256).hexdigest()
+        hash_webapp_raw = hmac.new(secret_key_webapp, data_check_string_raw.encode("utf-8"), hashlib.sha256).hexdigest()
+
+        # 2. Login Widget Style (User suggested): SHA256(token)
+        secret_key_login = hashlib.sha256(token.encode("utf-8")).digest()
+        hash_login_unquoted = hmac.new(secret_key_login, data_check_string_unquoted.encode("utf-8"), hashlib.sha256).hexdigest()
+        
+        # Check against received hash
+        received_hash_decoded = unquote(received_hash) # Just in case hash itself was encoded
+
+        if hmac.compare_digest(hash_webapp_unquoted, received_hash) or \
+           hmac.compare_digest(hash_webapp_unquoted, received_hash_decoded):
             return parsed_data
-        if _check_hash(parsed_data, received_hash, use_unquote=False):
+        
+        if hmac.compare_digest(hash_webapp_raw, received_hash) or \
+           hmac.compare_digest(hash_webapp_raw, received_hash_decoded):
             return parsed_data
 
-        # Log first 8 chars of each hash to help debug (wrong token vs corrupted initData)
-        rec = unquote(received_hash or "")[:8]
-        dcs = "\n".join(f"{k}={unquote(v)}" for k, v in sorted(parsed_data.items()))
-        sk = hmac.new(b"WebAppData", _get_bot_token().encode("utf-8"), hashlib.sha256).digest()
-        calc = hmac.new(sk, dcs.encode("utf-8"), hashlib.sha256).hexdigest()
+        # --- Debugging Logs on Failure ---
+        token_preview = f"{token[:5]}...{token[-5:]}" if len(token) > 10 else "N/A"
         
-        # Debugging: Show what token we are using (obfuscated)
-        token_used = _get_bot_token()
-        token_preview = f"{token_used[:5]}...{token_used[-5:]}" if len(token_used) > 10 else "N/A"
+        logger.warning("Telegram auth: HASH MISMATCH DEBUGGING")
+        logger.warning(f"  > Init Data Raw: {init_data}")
+        logger.warning(f"  > Received Hash: {received_hash}")
+        logger.warning(f"  > Token Used:    {token_preview}")
+        logger.warning(f"  > Data Check String (Unquoted): {data_check_string_unquoted!r}")
         
-        logger.warning(
-            "Telegram auth: hash mismatch\n"
-            f"  > Received Hash: {rec}\n"
-            f"  > Calculated:    {calc}\n"
-            f"  > Token Used:    {token_preview}\n"
-            "  (Ensure the bot token in Render matches the bot you are using to launch the app)",
-        )
+        logger.warning(f"  > CALC 1 (WebApp + Unquoted): {hash_webapp_unquoted}")
+        logger.warning(f"  > CALC 2 (WebApp + Raw):      {hash_webapp_raw}")
+        logger.warning(f"  > CALC 3 (LoginWidget Style): {hash_login_unquoted}")
+
+        if hmac.compare_digest(hash_login_unquoted, received_hash):
+             logger.warning("  !!! MATCH FOUND using Login Widget style. You might be using the wrong validation method for WebApp or vice versa.")
+
         return None
 
     except Exception as e:
