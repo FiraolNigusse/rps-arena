@@ -30,54 +30,62 @@ def telegram_login(request):
         return JsonResponse({"error": "Invalid method"}, status=405)
 
     try:
-        body = json.loads(request.body or "{}")
-    except json.JSONDecodeError:
-        return JsonResponse({"error": "Invalid JSON"}, status=400)
+        try:
+            body = json.loads(request.body or "{}")
+        except json.JSONDecodeError:
+            return JsonResponse({"error": "Invalid JSON"}, status=400)
 
-    init_data = body.get("initData")
+        init_data = body.get("initData")
 
-    if not init_data:
-        return JsonResponse({"error": "Missing initData"}, status=400)
+        if not init_data:
+            return JsonResponse({"error": "Missing initData"}, status=400)
 
-    data = verify_telegram_data(init_data)
-    if not data:
-        return JsonResponse({"error": "Invalid Telegram signature"}, status=403)
+        # verify_telegram_data now uses init-data-py and returns 
+        # {"user": { ...user_dict... }} if valid, else None
+        data = verify_telegram_data(init_data)
+        if not data:
+            return JsonResponse({"error": "Invalid Telegram signature"}, status=403)
 
-    user_str = data.get("user") or "{}"
-    try:
-        user_data = json.loads(unquote(user_str))
-    except (json.JSONDecodeError, TypeError):
-        return JsonResponse({"error": "Invalid user data"}, status=400)
-    
-    telegram_id = user_data.get("id")
-    if not telegram_id:
+        user_data = data.get("user")
+        if not user_data:
+            return JsonResponse({"error": "Missing user data"}, status=400)
+        
+        telegram_id = user_data.get("id")
+        if not telegram_id:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Telegram auth: Valid hash but missing 'id' in user data. Data: {user_data}")
+            return JsonResponse({"error": "Missing user ID in data"}, status=400)
+
+        username = user_data.get("username") or f"user_{telegram_id}"
+
+        user, created = User.objects.get_or_create(
+            telegram_id=telegram_id,
+            defaults={"username": username},
+        )
+        rating_obj, _ = Rating.objects.get_or_create(user=user, defaults={"value": 1000})
+
+        from game.services.jwt_service import generate_jwt
+        token = generate_jwt(user)
+
+        return JsonResponse({
+            "token": token,
+            "user": {
+                "id": user.id,
+                "telegram_id": user.telegram_id,
+                "username": user.username,
+                "coins": user.coins,
+                "rating": rating_obj.value,
+            },
+            "new_user": created,
+        })
+
+    except Exception as e:
+        import traceback
         import logging
         logger = logging.getLogger(__name__)
-        logger.error(f"Telegram auth: Valid hash but missing 'id' in user data. Data: {user_data}")
-        return JsonResponse({"error": "Missing user ID in data"}, status=400)
-
-    username = user_data.get("username") or f"user_{telegram_id}"
-
-    user, created = User.objects.get_or_create(
-        telegram_id=telegram_id,
-        defaults={"username": username},
-    )
-    rating_obj, _ = Rating.objects.get_or_create(user=user, defaults={"value": 1000})
-
-    from game.services.jwt_service import generate_jwt
-    token = generate_jwt(user)
-
-    return JsonResponse({
-        "token": token,
-        "user": {
-            "id": user.id,
-            "telegram_id": user.telegram_id,
-            "username": user.username,
-            "coins": user.coins,
-            "rating": rating_obj.value,
-        },
-        "new_user": created,
-    })
+        logger.error("Telegram auth exception:\n%s", traceback.format_exc())
+        return JsonResponse({"error": "Internal server error", "details": str(e)}, status=500)
 
 # -------------------------
 # Wallet endpoints
