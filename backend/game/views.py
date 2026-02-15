@@ -13,7 +13,7 @@ from datetime import timedelta
 from .models import User, Match, Payment, Withdrawal, Transaction, Rating
 from game.services.auth import jwt_required
 from game.services.telegram_auth import verify_telegram_data
-from game.services.wallet import add_coins, deduct_coins
+from game.services.wallet import add_coins, deduct_coins, lock_coins
 from game.services.rps_engine import validate_move, decide_round_winner
 from game.services.round_state import start_round, submit_move, get_round, end_round
 from game.services.matchmaking import enqueue_player
@@ -70,7 +70,10 @@ def telegram_login(request):
 @jwt_required
 @require_POST
 def wallet_balance(request):
-    return JsonResponse({"coins": request.user.coins})
+    return JsonResponse({
+        "coins": request.user.coins,
+        "locked_coins": request.user.locked_coins,
+    })
 
 
 @csrf_exempt
@@ -211,7 +214,7 @@ def submit_move_view(request):
         match.status = "finished"
         match.save()
 
-        payout_match(winner, match.stake)
+        payout_match(winner, match.stake, match=match)
 
         return JsonResponse({
             "match_finished": True,
@@ -347,11 +350,16 @@ def request_withdrawal(request):
     if not wallet:
         return JsonResponse({"error": "Wallet address is required"}, status=400)
 
+    if request.user.is_flagged:
+        return JsonResponse(
+            {"error": "Account under review. Withdrawals are temporarily disabled."},
+            status=403,
+        )
+
     if request.user.coins < amount:
         return JsonResponse({"error": "Insufficient balance"}, status=400)
 
     today = timezone.now().date()
-
     daily_total = Withdrawal.objects.filter(
         user=request.user,
         requested_at__date=today,
@@ -359,6 +367,11 @@ def request_withdrawal(request):
 
     if daily_total + amount > DAILY_LIMIT:
         return JsonResponse({"error": "Daily withdrawal limit exceeded"}, status=400)
+
+    try:
+        lock_coins(request.user, amount)
+    except ValueError:
+        return JsonResponse({"error": "Insufficient balance"}, status=400)
 
     Withdrawal.objects.create(
         user=request.user,

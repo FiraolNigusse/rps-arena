@@ -1,27 +1,33 @@
 from django.db import transaction
-from game.models import Transaction
+from game.models import Transaction, PlatformRevenue
 
 
-PLATFORM_COMMISSION = 0.05
+RAKE_PERCENT = 0.10  # 10% house fee
 
 
-def payout_match(winner, stake):
-    total_pot = stake * 2
-    commission = int(total_pot * PLATFORM_COMMISSION)
-    payout = total_pot - commission
+def payout_match(winner, stake, match=None):
+    """
+    Pay winner from pot minus 10% rake.
+    pot = stake * 2, rake = 10%, winner gets 90%.
+    """
+    pot = stake * 2
+    rake = int(pot * RAKE_PERCENT)
+    winner_reward = pot - rake
 
     with transaction.atomic():
-        winner.coins += payout
+        winner.coins += winner_reward
         winner.save()
 
         Transaction.objects.create(
             user=winner,
-            amount=payout,
-            type="win"
+            amount=winner_reward,
+            type="win",
         )
 
         Transaction.objects.create(
             user=winner,
-            amount=-commission,
-            type="commission"
+            amount=-rake,
+            type="commission",
         )
+
+        PlatformRevenue.objects.create(amount=rake, match=match)

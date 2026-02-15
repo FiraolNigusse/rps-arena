@@ -6,7 +6,7 @@ MATCH_QUEUES = defaultdict(list)
 QUEUE_TIMEOUT = 15  # seconds
 
 
-def enqueue_player(user, stake):
+def enqueue_player(user, stake, ip_address=None):
     queue = MATCH_QUEUES[stake]
 
     # Remove expired players
@@ -16,13 +16,21 @@ def enqueue_player(user, stake):
     # Try to match
     for q in queue:
         opponent = q["user"]
+        player1_ip = q.get("ip")
         queue.remove(q)
-        return enter_match(user, opponent, stake)
+        return enter_match(
+            player1=opponent,
+            player2=user,
+            stake=stake,
+            player1_ip=player1_ip,
+            player2_ip=ip_address,
+        )
 
     # No match found → enqueue
     queue.append({
         "user": user,
-        "time": now
+        "time": now,
+        "ip": ip_address,
     })
 
     return None

@@ -7,7 +7,12 @@ class User(models.Model):
     username = models.CharField(max_length=100, blank=True, null=True)
 
     coins = models.IntegerField(default=1000)
+    locked_coins = models.IntegerField(default=0)
     is_banned = models.BooleanField(default=False)
+    is_flagged = models.BooleanField(
+        default=False,
+        help_text="Suspicious account; blocks withdrawals",
+    )
 
     created_at = models.DateTimeField(default=timezone.now)
 
@@ -37,8 +42,9 @@ class Match(models.Model):
 
     stake = models.IntegerField()
 
-    # NEW FIELD
     ip_address = models.GenericIPAddressField(null=True, blank=True)
+    player1_ip = models.GenericIPAddressField(null=True, blank=True)
+    player2_ip = models.GenericIPAddressField(null=True, blank=True)
 
     winner = models.ForeignKey(
         User,
@@ -105,3 +111,19 @@ class Withdrawal(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - {self.amount} - {self.status}"
+
+
+class PlatformRevenue(models.Model):
+    """Tracks rake (10% house fee) from each match."""
+    amount = models.IntegerField()
+    match = models.ForeignKey(
+        Match,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        help_text="Null for quick-play vs AI",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Rake {self.amount} coins"
