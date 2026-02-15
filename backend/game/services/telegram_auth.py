@@ -76,11 +76,18 @@ def verify_telegram_data(init_data: str):
         rec = unquote(received_hash or "")[:8]
         dcs = "\n".join(f"{k}={unquote(v)}" for k, v in sorted(parsed_data.items()))
         sk = hmac.new(b"WebAppData", _get_bot_token().encode("utf-8"), hashlib.sha256).digest()
-        calc = hmac.new(sk, dcs.encode("utf-8"), hashlib.sha256).hexdigest()[:8]
+        calc = hmac.new(sk, dcs.encode("utf-8"), hashlib.sha256).hexdigest()
+        
+        # Debugging: Show what token we are using (obfuscated)
+        token_used = _get_bot_token()
+        token_preview = f"{token_used[:5]}...{token_used[-5:]}" if len(token_used) > 10 else "N/A"
+        
         logger.warning(
-            "Telegram auth: hash mismatch received=%s calculated=%s (TELEGRAM_BOT_TOKEN must be the token for the bot whose Web App URL points to this app)",
-            rec,
-            calc,
+            "Telegram auth: hash mismatch\n"
+            f"  > Received Hash: {rec}\n"
+            f"  > Calculated:    {calc}\n"
+            f"  > Token Used:    {token_preview}\n"
+            "  (Ensure the bot token in Render matches the bot you are using to launch the app)",
         )
         return None
 
