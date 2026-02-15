@@ -48,7 +48,14 @@ def telegram_login(request):
         user_data = json.loads(unquote(user_str))
     except (json.JSONDecodeError, TypeError):
         return JsonResponse({"error": "Invalid user data"}, status=400)
-    telegram_id = user_data["id"]
+    
+    telegram_id = user_data.get("id")
+    if not telegram_id:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Telegram auth: Valid hash but missing 'id' in user data. Data: {user_data}")
+        return JsonResponse({"error": "Missing user ID in data"}, status=400)
+
     username = user_data.get("username") or f"user_{telegram_id}"
 
     user, created = User.objects.get_or_create(
