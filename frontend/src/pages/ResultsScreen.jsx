@@ -1,4 +1,4 @@
-import { useEffect } from "react"
+import { useEffect, useCallback } from "react"
 import { useLocation, useNavigate } from "react-router-dom"
 import { useUser } from "../context/UserContext"
 import "./ResultsScreen.css"
@@ -18,14 +18,30 @@ export default function ResultsScreen() {
     newRating,
   } = location.state || {}
 
+  const playAgain = useCallback(() => {
+    navigate("/play")
+  }, [navigate])
+
   useEffect(() => {
     if (newBalance != null) updateUser({ coins: newBalance })
     if (newRating != null) updateUser({ rating: newRating })
   }, [newBalance, newRating, updateUser])
 
-  const playAgain = () => {
-    navigate("/play")
-  }
+  useEffect(() => {
+    const tg = window.Telegram?.WebApp
+    const mainBtn = tg?.MainButton
+
+    if (mainBtn && playerMove && opponentMove != null) {
+      mainBtn.setText("Play Again")
+      mainBtn.onClick(playAgain)
+      mainBtn.show()
+
+      return () => {
+        if (mainBtn.offClick) mainBtn.offClick(playAgain)
+        mainBtn.hide()
+      }
+    }
+  }, [playerMove, opponentMove, playAgain])
 
   if (!playerMove || !opponentMove || result == null) {
     return (
@@ -86,12 +102,12 @@ export default function ResultsScreen() {
       </div>
 
       <div className="results-screen__actions">
-        <button type="button" className="btn-primary" onClick={playAgain}>
+        <a href="#/play" className="btn-primary results-screen__action-btn">
           Play Again
-        </button>
-        <button type="button" className="btn-secondary" onClick={() => navigate("/wallet")}>
+        </a>
+        <a href="#/wallet" className="btn-secondary results-screen__action-btn">
           Wallet
-        </button>
+        </a>
       </div>
     </div>
   )

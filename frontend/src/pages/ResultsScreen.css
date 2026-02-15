@@ -134,3 +134,10 @@
   width: 100%;
   padding: 1rem;
 }
+
+.results-screen__action-btn {
+  display: block;
+  text-align: center;
+  text-decoration: none;
+  color: inherit;
+}
