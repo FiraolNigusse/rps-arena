@@ -119,4 +119,3 @@ if not DEBUG:
     CSRF_COOKIE_SECURE = True
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
-git commit -m "Deploy: configure frontend API base URL for Render backend and Vercel production
