@@ -26,16 +26,31 @@ export default function WalletScreen() {
   }, []);
 
   const buyCoins = () => {
-    const invoiceLink = import.meta.env.VITE_TG_INVOICE_LINK || "#";
-    if (window.Telegram?.WebApp) {
-      window.Telegram.WebApp.openInvoice(invoiceLink, (status) => {
+    const invoiceLink = (import.meta.env.VITE_TG_INVOICE_LINK || "").trim();
+    const tg = window.Telegram?.WebApp;
+    const showMsg = (msg) => tg?.showAlert?.(msg) ?? alert(msg);
+
+    if (!invoiceLink || invoiceLink === "#") {
+      showMsg("Payment is not configured yet. Add VITE_TG_INVOICE_LINK to enable purchases.");
+      return;
+    }
+
+    if (!tg?.openInvoice) {
+      showMsg("Please open this app from Telegram to purchase coins.");
+      return;
+    }
+
+    try {
+      tg.openInvoice(invoiceLink, (status) => {
         if (status === "paid") {
           apiPost("/wallet/balance/", {}).then((res) => {
             setCoins(res.coins ?? 0);
             updateUser({ coins: res.coins });
-          });
+          }).catch(() => {});
         }
       });
+    } catch (err) {
+      showMsg("Could not open payment. Please try again.");
     }
   };
 

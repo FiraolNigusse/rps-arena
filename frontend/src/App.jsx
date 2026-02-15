@@ -1,6 +1,6 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useEffect, useState } from "react";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { HashRouter, Routes, Route, Navigate } from "react-router-dom";
 
 import { initTelegram } from "./telegram";
 import { apiPost, setToken } from "./api/api";
@@ -51,7 +51,7 @@ function App() {
 
   return (
     <UserProvider initialUser={user}>
-      <BrowserRouter>
+      <HashRouter>
         <div className="app-container">
           <Routes>
             <Route path="/" element={<HomeScreen />} />
@@ -63,7 +63,7 @@ function App() {
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </div>
-      </BrowserRouter>
+      </HashRouter>
     </UserProvider>
   );
 }
