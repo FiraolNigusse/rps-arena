@@ -63,7 +63,7 @@ Shown when backend rejects `initData` (signature check fails). **Check Render lo
 
 - **"Telegram auth: no hash in initData"** – Frontend didn’t send hash; ensure the app is opened from the bot (Menu → Web App), not by opening the Vercel URL in a browser.
 - **"Telegram auth: TELEGRAM_BOT_TOKEN not set"** – Set `TELEGRAM_BOT_TOKEN` in Render env exactly as in @BotFather (no extra spaces), then redeploy.
-- **"Telegram auth: hash mismatch"** – Token may be wrong, or initData format differs. Confirm `TELEGRAM_BOT_TOKEN` is the token for the same bot whose Web App URL points to your Vercel app; redeploy backend after any env change.
+- **"Telegram auth: hash mismatch"** – The bot token on Render is almost always the cause. In Render → Environment: set `TELEGRAM_BOT_TOKEN` to the **exact** value from @BotFather (e.g. `123456789:AAH...`). Do **not** wrap it in quotes. It must be the token for the **same** bot whose Web App URL in @BotFather points to your Vercel app. Redeploy the backend after changing it. (Logs will show `received=... calculated=...`; if both look like hex, the token is wrong.)
 
 The backend now tries both unquoted and raw value formats for the data-check string; if it still fails, the token is the most likely cause.
 
