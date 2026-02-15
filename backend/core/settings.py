@@ -5,12 +5,17 @@ Django settings for core project.
 from pathlib import Path
 import os
 from decouple import config
+import dj_database_url
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = config("SECRET_KEY", default="django-insecure-CHANGE-THIS-IN-PRODUCTION")
-DEBUG = config("DEBUG", default=True, cast=bool)
-ALLOWED_HOSTS = config("ALLOWED_HOSTS", default="localhost,127.0.0.1", cast=lambda v: [s.strip() for s in v.split(",") if s.strip()])
+DEBUG = config("DEBUG", default=False, cast=bool)
+ALLOWED_HOSTS = config(
+    "ALLOWED_HOSTS",
+    default="localhost,127.0.0.1,.onrender.com",
+    cast=lambda v: [s.strip() for s in v.split(",") if s.strip()],
+)
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -28,6 +33,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -56,21 +62,15 @@ TEMPLATES = [
 WSGI_APPLICATION = "core.wsgi.application"
 ASGI_APPLICATION = "core.asgi.application"
 
+_db_url = config("DATABASE_URL", default="")
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
-    }
+    "default": dj_database_url.config(
+        default=_db_url or f"sqlite:///{(BASE_DIR / 'db.sqlite3').as_posix()}",
+        conn_max_age=600,
+        conn_health_checks=bool(_db_url),
+        ssl_require=not DEBUG and bool(_db_url),
+    )
 }
-
-# Use DATABASE_URL for PostgreSQL in production (requires dj-database-url)
-_database_url = config("DATABASE_URL", default="")
-if _database_url and "postgres" in _database_url:
-    try:
-        import dj_database_url
-        DATABASES["default"] = dj_database_url.config(conn_max_age=600, ssl_require=not DEBUG)
-    except ImportError:
-        pass
 
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
@@ -84,8 +84,9 @@ TIME_ZONE = "UTC"
 USE_I18N = True
 USE_TZ = True
 
-STATIC_URL = "static/"
-STATIC_ROOT = BASE_DIR / "staticfiles"
+STATIC_URL = "/static/"
+STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
+STATICFILES_STORAGE = "whitenoise.storage.CompressedStaticFilesStorage"
 
 TELEGRAM_BOT_TOKEN = config("TELEGRAM_BOT_TOKEN", default="")
 JWT_SECRET_KEY = config("JWT_SECRET_KEY", default="CHANGE_THIS_TO_A_RANDOM_SECRET")
@@ -105,6 +106,7 @@ if _csrf_origins:
     CSRF_TRUSTED_ORIGINS = [s.strip() for s in _csrf_origins.split(",") if s.strip()]
 
 # Production security
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 if not DEBUG:
     SECURE_BROWSER_XSS_FILTER = True
     SECURE_CONTENT_TYPE_NOSNIFF = True
@@ -112,7 +114,7 @@ if not DEBUG:
     SECURE_HSTS_SECONDS = 31536000
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
-    SECURE_SSL_REDIRECT = config("SECURE_SSL_REDIRECT", default=True, cast=bool)
+    SECURE_SSL_REDIRECT = True
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
 

@@ -1,5 +1,38 @@
 # RPS Arena – Deployment Guide
 
+## Part 1 — Backend on Render
+
+### Prerequisites
+
+- Backend is prepared for production (see below)
+- Render account
+
+### Render setup
+
+1. Create a new **Web Service** on [Render](https://render.com)
+2. Connect your Git repo
+3. **Root directory**: `backend`
+4. **Build command**: `pip install -r requirements.txt && python manage.py collectstatic --noinput`
+5. **Start command**: `gunicorn core.wsgi` (or leave blank to use Procfile)
+6. Add **PostgreSQL** in Render (or use external DB) and copy `DATABASE_URL`
+
+### Environment variables (Render)
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `SECRET_KEY` | Yes | Random secret (e.g. `python -c "import secrets; print(secrets.token_hex(32))"`) |
+| `DEBUG` | Yes | `False` for production |
+| `ALLOWED_HOSTS` | Yes | `your-app-name.onrender.com` (Render provides the URL) |
+| `DATABASE_URL` | Yes | Auto-set by Render if using their PostgreSQL |
+| `TELEGRAM_BOT_TOKEN` | Yes | From @BotFather |
+| `JWT_SECRET_KEY` | Yes | Random secret for JWT |
+| `CORS_ALLOWED_ORIGINS` | Yes | Frontend URL, e.g. `https://your-app.vercel.app` |
+| `CSRF_TRUSTED_ORIGINS` | Yes | Same as CORS, e.g. `https://your-app.vercel.app` |
+
+After deploy, set `ALLOWED_HOSTS` to your actual Render URL (e.g. `rps-arena-api.onrender.com`).
+
+---
+
 ## Backend (Django)
 
 ### 1. Environment variables
