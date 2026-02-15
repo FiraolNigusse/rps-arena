@@ -28,7 +28,8 @@ function App() {
 
     const initData = tg.initData;
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000);
+    const timeoutMs = 55000;
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
     setStatus("Connecting...");
 
@@ -51,13 +52,13 @@ function App() {
         clearTimeout(timeoutId);
         console.error("Auth failed:", err?.status, err?.message);
         if (err?.name === "AbortError") {
-          setStatus("Server is slow to start. Tap to try again.");
+          setStatus("Server is slow to start.");
         } else if (err?.status === 0 || err?.message?.includes("fetch")) {
-          setStatus("Cannot reach server. Tap to retry.");
+          setStatus("Cannot reach server.");
         } else if (err?.status === 403) {
           setStatus("Invalid Telegram data. Open from Telegram.");
         } else {
-          setStatus("Authentication failed. Tap to retry.");
+          setStatus("Authentication failed.");
         }
       });
   }, []);
@@ -72,18 +73,25 @@ function App() {
   }, [doAuth]);
 
   if (!user) {
-    const isRetryable = status.includes("Tap to retry") || status.includes("Tap to try again");
+    const isRetryable = status.includes("slow to start") || status.includes("Cannot reach server") || status.includes("Authentication failed");
+    const handleRetry = () => {
+      setStatus("Connecting...");
+      doAuth();
+    };
+
     return (
-      <div
-        className="auth-loading"
-        role={isRetryable ? "button" : undefined}
-        onClick={isRetryable ? () => { setStatus("Initializing..."); doAuth(); } : undefined}
-        onKeyDown={isRetryable ? (e) => { if (e.key === "Enter" || e.key === " ") { setStatus("Initializing..."); doAuth(); } } : undefined}
-        tabIndex={isRetryable ? 0 : undefined}
-        style={isRetryable ? { cursor: "pointer" } : undefined}
-      >
+      <div className="auth-loading">
         <div className="auth-loading__spinner" />
         <p className="auth-loading__text">{status}</p>
+        {isRetryable && (
+          <button
+            type="button"
+            className="auth-loading__retry btn-primary"
+            onClick={handleRetry}
+          >
+            Retry
+          </button>
+        )}
       </div>
     );
   }

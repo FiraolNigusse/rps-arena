@@ -28,6 +28,14 @@
 .auth-loading__text {
   font-size: 1rem;
   color: var(--text-secondary);
+  margin-bottom: 1rem;
+}
+
+.auth-loading__retry {
+  margin-top: 0.5rem;
+  min-height: 48px;
+  min-width: 140px;
+  padding: 0.75rem 1.5rem;
 }
 
 @keyframes spin {
