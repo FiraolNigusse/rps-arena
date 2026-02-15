@@ -1,6 +1,7 @@
 import json
 import time
 import random
+from urllib.parse import unquote
 
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
@@ -42,7 +43,11 @@ def telegram_login(request):
     if not data:
         return JsonResponse({"error": "Invalid Telegram signature"}, status=403)
 
-    user_data = json.loads(data.get("user"))
+    user_str = data.get("user") or "{}"
+    try:
+        user_data = json.loads(unquote(user_str))
+    except (json.JSONDecodeError, TypeError):
+        return JsonResponse({"error": "Invalid user data"}, status=400)
     telegram_id = user_data["id"]
     username = user_data.get("username") or f"user_{telegram_id}"
 
