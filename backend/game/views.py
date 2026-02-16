@@ -22,10 +22,20 @@ from game.services.payout import payout_match
 from game.services.rating_service import expected_score, update_elo
 
 # -------------------------
+# Health check
+# -------------------------
+def health_check(request):
+    return JsonResponse({"status": "ok", "timestamp": timezone.now().isoformat()})
+
+# -------------------------
 # Telegram login
 # -------------------------
 @csrf_exempt
 def telegram_login(request):
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.info("Telegram login request received")
+    
     if request.method != "POST":
         return JsonResponse({"error": "Invalid method"}, status=405)
 

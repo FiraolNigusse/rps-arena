@@ -10,7 +10,7 @@ from .views import (
     withdraw_list,
 )
 from .views import submit_move_view, quick_play_submit
-from .views import telegram_webhook
+from .views import telegram_webhook, health_check
 
 urlpatterns = [
     path("auth/telegram/", telegram_login),
@@ -25,5 +25,5 @@ urlpatterns = [
     path("telegram/webhook/", telegram_webhook),
     path("withdraw/request/", request_withdrawal),
     path("withdraw/list/", withdraw_list),
-
+    path("health/", health_check),
 ]
