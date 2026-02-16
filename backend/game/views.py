@@ -22,6 +22,21 @@ from game.services.payout import payout_match
 from game.services.rating_service import expected_score, update_elo
 
 # -------------------------
+# Temporary migration view (for Shell-less environments)
+# -------------------------
+def run_migrations_view(request):
+    from django.core.management import call_command
+    import logging
+    logger = logging.getLogger(__name__)
+    try:
+        logger.info("Starting manual migration via endpoint...")
+        call_command("migrate", interactive=False)
+        return JsonResponse({"status": "success", "message": "Migrations applied successfully"})
+    except Exception as e:
+        logger.error(f"Manual migration error: {e}")
+        return JsonResponse({"status": "error", "message": str(e)}, status=500)
+
+# -------------------------
 # Health check
 # -------------------------
 def health_check(request):

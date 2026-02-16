@@ -7,7 +7,7 @@ def generate_jwt(user):
     payload = {
         "user_id": user.id,
         "telegram_id": user.telegram_id,
-        "exp": datetime.datetime.utcnow() + datetime.timedelta(
+        "exp": datetime.datetime.now(datetime.UTC) + datetime.timedelta(
             seconds=settings.JWT_EXP_DELTA_SECONDS
         )
     }
