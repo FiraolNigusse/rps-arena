@@ -11,6 +11,9 @@ from django.db.models import Sum
 from datetime import timedelta
 
 
+import uuid
+import requests
+from django.conf import settings
 from .models import User, Match, Payment, Withdrawal, Transaction, Rating
 from game.services.auth import jwt_required
 from game.services.telegram_auth import verify_telegram_data
@@ -262,6 +265,67 @@ def submit_move_view(request):
     })
 
 # -------------------------
+# Telegram payment create
+# -------------------------
+@csrf_exempt
+@jwt_required
+@require_POST
+def create_invoice_view(request):
+    """
+    Creates a pending Payment and returns a Telegram Stars invoice link.
+    """
+    body = json.loads(request.body)
+    amount = int(body.get("amount", 10)) # Stars amount
+    
+    if amount <= 0:
+        return JsonResponse({"error": "Invalid amount"}, status=400)
+
+    # 1 Star = 1 Coin (adjust ratio as needed)
+    coins_to_credit = amount
+
+    payload_id = f"pay_{uuid.uuid4().hex}"
+    
+    payment_obj = Payment.objects.create(
+        user=request.user,
+        payload_id=payload_id,
+        amount=amount,
+        coins_credited=coins_to_credit,
+        status="pending"
+    )
+
+    # Telegram API to get invoice link
+    token = settings.TELEGRAM_BOT_TOKEN
+    url = f"https://api.telegram.org/bot{token}/createInvoiceLink"
+    
+    payload = {
+        "title": f"Purchase {coins_to_credit} Coins",
+        "description": f"Buy {coins_to_credit} coins for Rock-Paper-Scissors Arena",
+        "payload": payload_id,
+        "currency": "XTR",
+        "prices": [
+            {"label": f"{coins_to_credit} Coins", "amount": amount}
+        ]
+    }
+
+    try:
+        resp = requests.post(url, json=payload, timeout=10)
+        res_data = resp.json()
+        if res_data.get("ok"):
+            return JsonResponse({
+                "invoice_link": res_data["result"],
+                "payment_id": payment_obj.id
+            })
+        else:
+            payment_obj.status = "failed"
+            payment_obj.save()
+            return JsonResponse({"error": "Failed to create invoice", "details": res_data}, status=500)
+    except Exception as e:
+        payment_obj.status = "failed"
+        payment_obj.save()
+        return JsonResponse({"error": str(e)}, status=500)
+
+
+# -------------------------
 # Telegram webhook for payments
 # -------------------------
 @csrf_exempt
@@ -270,32 +334,66 @@ def telegram_webhook(request):
         return JsonResponse({"error": "invalid request"}, status=400)
 
     data = json.loads(request.body)
+    token = settings.TELEGRAM_BOT_TOKEN
 
+    # 1. Handle Pre-Checkout Query (Requirement for Telegram Payments)
+    if "pre_checkout_query" in data:
+        query = data["pre_checkout_query"]
+        payload_id = query.get("invoice_payload")
+        
+        # Verify if payment exists in our DB
+        valid = Payment.objects.filter(payload_id=payload_id, status="pending").exists()
+        
+        url = f"https://api.telegram.org/bot{token}/answerPreCheckoutQuery"
+        answer = {
+            "pre_checkout_query_id": query["id"],
+            "ok": valid,
+            "error_message": "Payment session expired or invalid." if not valid else ""
+        }
+        requests.post(url, json=answer, timeout=10)
+        return JsonResponse({"status": "pre_checkout_handled"})
+
+    # 2. Handle Successful Payment
     if "message" in data and "successful_payment" in data["message"]:
-        payment = data["message"]["successful_payment"]
-
-        telegram_user = data["message"]["from"]["id"]
-        total_amount = payment["total_amount"]
+        sp = data["message"]["successful_payment"]
+        payload_id = sp.get("invoice_payload")
+        telegram_charge_id = sp.get("telegram_payment_charge_id")
 
         try:
-            user = User.objects.get(telegram_id=telegram_user)
-            coins_to_credit = total_amount // 100
+            # Atomic update to prevent race conditions or duplicate processing
+            with transaction.atomic():
+                # Check for existing completed payment with this charge ID (extra safety)
+                if Payment.objects.filter(telegram_payment_charge_id=telegram_charge_id).exists():
+                    return JsonResponse({"status": "already_processed"})
 
-            Payment.objects.create(
-                user=user,
-                telegram_payment_charge_id=payment["telegram_payment_charge_id"],
-                provider_payment_charge_id=payment["provider_payment_charge_id"],
-                amount=total_amount,
-                coins_credited=coins_to_credit,
-            )
+                payment_obj = Payment.objects.select_for_update().get(payload_id=payload_id)
+                
+                if payment_obj.status == "completed":
+                    return JsonResponse({"status": "already_completed"})
 
-            user.coins += coins_to_credit
-            user.save()
+                # Update payment record
+                payment_obj.telegram_payment_charge_id = telegram_charge_id
+                payment_obj.provider_payment_charge_id = sp.get("provider_payment_charge_id")
+                payment_obj.status = "completed"
+                payment_obj.save()
+
+                # Credit user
+                user = payment_obj.user
+                add_coins(user, payment_obj.coins_credited, tx_type="purchase")
 
             return JsonResponse({"status": "ok"})
 
-        except User.DoesNotExist:
-            return JsonResponse({"error": "User not found"}, status=404)
+        except Payment.DoesNotExist:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Payment record not found for payload: {payload_id}")
+            return JsonResponse({"error": "Payment record not found"}, status=404)
+        except Exception as e:
+            import traceback
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Webhook error: {traceback.format_exc()}")
+            return JsonResponse({"error": str(e)}, status=500)
 
     return JsonResponse({"status": "ignored"})
 

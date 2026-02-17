@@ -10,7 +10,7 @@ from .views import (
     withdraw_list,
 )
 from .views import submit_move_view, quick_play_submit
-from .views import telegram_webhook, health_check
+from .views import telegram_webhook, health_check, create_invoice_view
 
 urlpatterns = [
     path("auth/telegram/", telegram_login),
@@ -19,6 +19,7 @@ urlpatterns = [
     path("wallet/transactions/", wallet_transactions),
     path("wallet/add/", wallet_add_coins),
     path("wallet/deduct/", wallet_deduct_coins),
+    path("wallet/stars/invoice/", create_invoice_view),
     path("match/find/", find_match),
     path("match/", submit_move_view),
     path("match/submit/", quick_play_submit),
