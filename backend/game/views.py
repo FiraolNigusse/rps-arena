@@ -7,6 +7,7 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST, require_GET
 from django.utils import timezone
+from django.db import transaction, models
 from django.db.models import Sum
 from datetime import timedelta
 
@@ -318,11 +319,15 @@ def create_invoice_view(request):
         else:
             payment_obj.status = "failed"
             payment_obj.save()
-            return JsonResponse({"error": "Failed to create invoice", "details": res_data}, status=500)
+            return JsonResponse({
+                "error": "Telegram API Error", 
+                "details": res_data.get("description", "Unknown error"),
+                "raw": res_data
+            }, status=400)
     except Exception as e:
         payment_obj.status = "failed"
         payment_obj.save()
-        return JsonResponse({"error": str(e)}, status=500)
+        return JsonResponse({"error": "Internal Server Error", "details": str(e)}, status=500)
 
 
 # -------------------------
