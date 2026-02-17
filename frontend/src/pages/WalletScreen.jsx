@@ -60,7 +60,8 @@ export default function WalletScreen() {
       });
     } catch (err) {
       console.error("Payment error:", err);
-      showMsg("Could not connect to payment server. Please try again.");
+      const msg = err.data?.details || err.data?.error || "Could not connect to payment server. Please try again.";
+      showMsg(msg);
     }
   };
 
