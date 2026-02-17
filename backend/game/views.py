@@ -53,26 +53,32 @@ def run_migrations(request):
         return JsonResponse({"status": "error", "message": str(e), "output": out.getvalue()}, status=500)
 
 def repair_db(request):
-    """Manually add the missing column to fix the specific 'payload_id' error."""
+    """Manually fix database schema issues that migrations failed to catch."""
     from django.db import connection
+    results = []
     try:
         with connection.cursor() as cursor:
-            # Check if column exists first to avoid error
-            cursor.execute("""
-                SELECT column_name 
-                FROM information_schema.columns 
-                WHERE table_name='game_payment' AND column_name='payload_id';
-            """)
-            if cursor.fetchone():
-                return JsonResponse({"status": "already_fixed", "message": "Column 'payload_id' already exists."})
+            # 1. Check/Add payload_id
+            cursor.execute("SELECT column_name FROM information_schema.columns WHERE table_name='game_payment' AND column_name='payload_id';")
+            if not cursor.fetchone():
+                cursor.execute('ALTER TABLE game_payment ADD COLUMN payload_id VARCHAR(255) UNIQUE;')
+                results.append("Added payload_id column.")
             
-            # Manually add the column
-            cursor.execute('ALTER TABLE game_payment ADD COLUMN payload_id VARCHAR(255) UNIQUE;')
-            # Also add the status choices column update if needed (from the same migration)
+            # 2. Fix NOT NULL constraints (This is the 500 cause)
+            cursor.execute('ALTER TABLE game_payment ALTER COLUMN telegram_payment_charge_id DROP NOT NULL;')
+            cursor.execute('ALTER TABLE game_payment ALTER COLUMN provider_payment_charge_id DROP NOT NULL;')
+            results.append("Dropped NOT NULL constraints on charge ID columns.")
+            
+            # 3. Add updated_at if missing
+            cursor.execute("SELECT column_name FROM information_schema.columns WHERE table_name='game_payment' AND column_name='updated_at';")
+            if not cursor.fetchone():
+                cursor.execute('ALTER TABLE game_payment ADD COLUMN updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;')
+                results.append("Added updated_at column.")
+
+            # 4. Ensure status column can hold 'pending'
             cursor.execute('ALTER TABLE game_payment ALTER COLUMN status TYPE VARCHAR(20);')
-            cursor.execute('ALTER TABLE game_payment ADD COLUMN updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;')
-            
-        return JsonResponse({"status": "success", "message": "Database columns manually repaired!"})
+
+        return JsonResponse({"status": "success", "actions": results})
     except Exception as e:
         return JsonResponse({"status": "error", "message": str(e)}, status=500)
 
