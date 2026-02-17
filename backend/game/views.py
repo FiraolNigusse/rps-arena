@@ -31,8 +31,26 @@ from game.services.rating_service import expected_score, update_elo
 # -------------------------
 # Health check
 # -------------------------
+from django.core.management import call_command
+from io import StringIO
+
 def health_check(request):
     return JsonResponse({"status": "ok", "timestamp": timezone.now().isoformat()})
+
+def migration_status(request):
+    """Diagnostic view to check migration status."""
+    out = StringIO()
+    call_command('showmigrations', stdout=out)
+    return JsonResponse({"migrations": out.getvalue()})
+
+def run_migrations(request):
+    """Force run migrations manually from URL."""
+    out = StringIO()
+    try:
+        call_command('migrate', '--noinput', stdout=out)
+        return JsonResponse({"status": "success", "output": out.getvalue()})
+    except Exception as e:
+        return JsonResponse({"status": "error", "message": str(e), "output": out.getvalue()}, status=500)
 
 # -------------------------
 # Telegram login
