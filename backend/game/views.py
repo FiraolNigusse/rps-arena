@@ -12,6 +12,9 @@ from django.db.models import Sum
 from datetime import timedelta
 
 
+import logging
+logger = logging.getLogger(__name__)
+
 import uuid
 import requests
 from django.conf import settings
@@ -286,29 +289,30 @@ def create_invoice_view(request):
 
     payload_id = f"pay_{uuid.uuid4().hex}"
     
-    payment_obj = Payment.objects.create(
-        user=request.user,
-        payload_id=payload_id,
-        amount=amount,
-        coins_credited=coins_to_credit,
-        status="pending"
-    )
-
-    # Telegram API to get invoice link
-    token = settings.TELEGRAM_BOT_TOKEN
-    url = f"https://api.telegram.org/bot{token}/createInvoiceLink"
-    
-    payload = {
-        "title": f"Purchase {coins_to_credit} Coins",
-        "description": f"Buy {coins_to_credit} coins for Rock-Paper-Scissors Arena",
-        "payload": payload_id,
-        "currency": "XTR",
-        "prices": [
-            {"label": f"{coins_to_credit} Coins", "amount": amount}
-        ]
-    }
-
+    payment_obj = None
     try:
+        payment_obj = Payment.objects.create(
+            user=request.user,
+            payload_id=payload_id,
+            amount=amount,
+            coins_credited=coins_to_credit,
+            status="pending"
+        )
+
+        # Telegram API to get invoice link
+        token = settings.TELEGRAM_BOT_TOKEN
+        url = f"https://api.telegram.org/bot{token}/createInvoiceLink"
+        
+        payload = {
+            "title": f"Purchase {coins_to_credit} Coins",
+            "description": f"Buy {coins_to_credit} coins for Rock-Paper-Scissors Arena",
+            "payload": payload_id,
+            "currency": "XTR",
+            "prices": [
+                {"label": f"{coins_to_credit} Coins", "amount": amount}
+            ]
+        }
+
         resp = requests.post(url, json=payload, timeout=10)
         res_data = resp.json()
         if res_data.get("ok"):
@@ -325,9 +329,22 @@ def create_invoice_view(request):
                 "raw": res_data
             }, status=400)
     except Exception as e:
-        payment_obj.status = "failed"
-        payment_obj.save()
-        return JsonResponse({"error": "Internal Server Error", "details": str(e)}, status=500)
+        import traceback
+        error_tb = traceback.format_exc()
+        logger.error(f"Invoice Creation Error: {error_tb}")
+        
+        # Try to mark as failed if it was created
+        try:
+            payment_obj.status = "failed"
+            payment_obj.save()
+        except:
+            pass
+            
+        return JsonResponse({
+            "error": "Internal Server Error", 
+            "details": str(e),
+            "traceback": error_tb if settings.DEBUG else None
+        }, status=500)
 
 
 # -------------------------
