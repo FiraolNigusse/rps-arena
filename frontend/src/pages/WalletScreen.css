@@ -37,10 +37,54 @@
   line-height: 1.5;
 }
 
-.wallet-screen__buy {
-  width: 100%;
-  padding: 1rem;
+.wallet-screen__subtitle {
+  font-size: 0.95rem;
+  font-weight: 600;
   margin-bottom: 0.75rem;
+  color: var(--text-secondary);
+  text-align: left;
+}
+
+.wallet-screen__packages {
+  margin-bottom: 1.5rem;
+}
+
+.wallet-screen__package-list {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+}
+
+.wallet-screen__package-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  padding: 0.75rem;
+  background: var(--bg-card);
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.wallet-screen__package-btn:hover {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+}
+
+.package-amount {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.package-price {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--accent);
+  text-transform: uppercase;
 }
 
 .wallet-screen__withdraw {

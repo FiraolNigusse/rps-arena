@@ -16,7 +16,7 @@ export default function WalletScreen() {
         setCoins(res.coins ?? 0);
         updateUser({ coins: res.coins });
       })
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   useEffect(() => {
@@ -25,15 +25,9 @@ export default function WalletScreen() {
       .catch(() => setTransactions([]));
   }, []);
 
-  const buyCoins = () => {
-    const invoiceLink = (import.meta.env.VITE_TG_INVOICE_LINK || "").trim();
+  const buyCoins = async (amount = 100) => {
     const tg = window.Telegram?.WebApp;
     const showMsg = (msg) => tg?.showAlert?.(msg) ?? alert(msg);
-
-    if (!invoiceLink || invoiceLink === "#") {
-      showMsg("Payment is not configured yet. Add VITE_TG_INVOICE_LINK to enable purchases.");
-      return;
-    }
 
     if (!tg?.openInvoice) {
       showMsg("Please open this app from Telegram to purchase coins.");
@@ -41,16 +35,32 @@ export default function WalletScreen() {
     }
 
     try {
-      tg.openInvoice(invoiceLink, (status) => {
-        if (status === "paid") {
-          apiPost("/wallet/balance/", {}).then((res) => {
-            setCoins(res.coins ?? 0);
-            updateUser({ coins: res.coins });
-          }).catch(() => {});
+      // 1. Get live invoice link from backend
+      const res = await apiPost("/wallet/stars/invoice/", { amount });
+
+      if (!res.invoice_link) {
+        showMsg("Failed to generate invoice. Please try again later.");
+        return;
+      }
+
+      // 2. Open Telegram payment UI
+      tg.openInvoice(res.invoice_link, (status) => {
+        if (status === "paid" || status === "completed") {
+          // 3. Refresh balance after payment
+          apiPost("/wallet/balance/", {}).then((balanceRes) => {
+            setCoins(balanceRes.coins ?? 0);
+            updateUser({ coins: balanceRes.coins });
+            showMsg("Payment successful! Coins added to your wallet.");
+          }).catch(() => { });
+        } else if (status === "cancelled") {
+          // Ignored
+        } else {
+          showMsg(`Payment status: ${status}`);
         }
       });
     } catch (err) {
-      showMsg("Could not open payment. Please try again.");
+      console.error("Payment error:", err);
+      showMsg("Could not connect to payment server. Please try again.");
     }
   };
 
@@ -81,9 +91,22 @@ export default function WalletScreen() {
         Coins are used to play games and earn rewards.
       </p>
 
-      <button type="button" className="btn-primary wallet-screen__buy" onClick={buyCoins}>
-        Buy Coins
-      </button>
+      <div className="wallet-screen__packages">
+        <h2 className="wallet-screen__subtitle">Get more coins</h2>
+        <div className="wallet-screen__package-list">
+          {[50, 100, 250].map((amount) => (
+            <button
+              key={amount}
+              type="button"
+              className="wallet-screen__package-btn"
+              onClick={() => buyCoins(amount)}
+            >
+              <span className="package-amount">{amount}</span>
+              <span className="package-price">{amount} Stars</span>
+            </button>
+          ))}
+        </div>
+      </div>
 
       <button
         type="button"
