@@ -16,11 +16,12 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
-from game.views import health_check
+from game.views import health_check, telegram_webhook
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path("api/", include("game.urls")),
+    path("telegram_webhook/", telegram_webhook),
     path("health/", health_check),
     path("", health_check),  # Root path health check
 ]

@@ -22,7 +22,6 @@ urlpatterns = [
     path("match/find/", find_match),
     path("match/", submit_move_view),
     path("match/submit/", quick_play_submit),
-    path("telegram/webhook/", telegram_webhook),
     path("withdraw/request/", request_withdrawal),
     path("withdraw/list/", withdraw_list),
     path("health/", health_check),
