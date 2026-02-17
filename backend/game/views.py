@@ -52,6 +52,30 @@ def run_migrations(request):
     except Exception as e:
         return JsonResponse({"status": "error", "message": str(e), "output": out.getvalue()}, status=500)
 
+def repair_db(request):
+    """Manually add the missing column to fix the specific 'payload_id' error."""
+    from django.db import connection
+    try:
+        with connection.cursor() as cursor:
+            # Check if column exists first to avoid error
+            cursor.execute("""
+                SELECT column_name 
+                FROM information_schema.columns 
+                WHERE table_name='game_payment' AND column_name='payload_id';
+            """)
+            if cursor.fetchone():
+                return JsonResponse({"status": "already_fixed", "message": "Column 'payload_id' already exists."})
+            
+            # Manually add the column
+            cursor.execute('ALTER TABLE game_payment ADD COLUMN payload_id VARCHAR(255) UNIQUE;')
+            # Also add the status choices column update if needed (from the same migration)
+            cursor.execute('ALTER TABLE game_payment ALTER COLUMN status TYPE VARCHAR(20);')
+            cursor.execute('ALTER TABLE game_payment ADD COLUMN updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;')
+            
+        return JsonResponse({"status": "success", "message": "Database columns manually repaired!"})
+    except Exception as e:
+        return JsonResponse({"status": "error", "message": str(e)}, status=500)
+
 # -------------------------
 # Telegram login
 # -------------------------
