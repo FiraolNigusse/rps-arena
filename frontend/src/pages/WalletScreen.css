@@ -37,16 +37,65 @@
   line-height: 1.5;
 }
 
+.wallet-screen__buy {
+  width: 100%;
+  padding: 1.1rem;
+  margin-bottom: 0.75rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent);
+  /* Ensure it's the green/primary color from your pic */
+}
+
+.wallet-screen__packages-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
 .wallet-screen__subtitle {
   font-size: 0.95rem;
   font-weight: 600;
-  margin-bottom: 0.75rem;
   color: var(--text-secondary);
   text-align: left;
+  margin: 0;
+}
+
+.wallet-screen__close {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 0.25rem;
 }
 
 .wallet-screen__packages {
   margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 16px;
+  border: 1px solid var(--border);
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .wallet-screen__package-list {

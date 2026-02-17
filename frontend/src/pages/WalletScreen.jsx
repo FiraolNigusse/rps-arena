@@ -25,6 +25,8 @@ export default function WalletScreen() {
       .catch(() => setTransactions([]));
   }, []);
 
+  const [showPackages, setShowPackages] = useState(false);
+
   const buyCoins = async (amount = 100) => {
     const tg = window.Telegram?.WebApp;
     const showMsg = (msg) => tg?.showAlert?.(msg) ?? alert(msg);
@@ -51,6 +53,7 @@ export default function WalletScreen() {
             setCoins(balanceRes.coins ?? 0);
             updateUser({ coins: balanceRes.coins });
             showMsg("Payment successful! Coins added to your wallet.");
+            setShowPackages(false); // Reset UI
           }).catch(() => { });
         } else if (status === "cancelled") {
           // Ignored
@@ -75,7 +78,7 @@ export default function WalletScreen() {
   };
 
   const typeLabel = (type) => {
-    const map = { win: "Match win", purchase: "Purchase", withdrawal: "Withdrawal", stake: "Stake" };
+    const map = { win: "Match win", purchase: "Purchase", withdrawal: "Withdrawal", stake: "Stake", commission: "Commission" };
     return map[type] || type;
   };
 
@@ -92,22 +95,35 @@ export default function WalletScreen() {
         Coins are used to play games and earn rewards.
       </p>
 
-      <div className="wallet-screen__packages">
-        <h2 className="wallet-screen__subtitle">Get more coins</h2>
-        <div className="wallet-screen__package-list">
-          {[50, 100, 250].map((amount) => (
-            <button
-              key={amount}
-              type="button"
-              className="wallet-screen__package-btn"
-              onClick={() => buyCoins(amount)}
-            >
-              <span className="package-amount">{amount}</span>
-              <span className="package-price">{amount} Stars</span>
-            </button>
-          ))}
+      {!showPackages ? (
+        <button
+          type="button"
+          className="btn-primary wallet-screen__buy"
+          onClick={() => setShowPackages(true)}
+        >
+          Buy Coins
+        </button>
+      ) : (
+        <div className="wallet-screen__packages animate-fade-in">
+          <div className="wallet-screen__packages-header">
+            <h2 className="wallet-screen__subtitle">Get more coins</h2>
+            <button className="wallet-screen__close" onClick={() => setShowPackages(false)}>✕</button>
+          </div>
+          <div className="wallet-screen__package-list">
+            {[50, 100, 250].map((amount) => (
+              <button
+                key={amount}
+                type="button"
+                className="wallet-screen__package-btn"
+                onClick={() => buyCoins(amount)}
+              >
+                <span className="package-amount">{amount}</span>
+                <span className="package-price">{amount} Stars</span>
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       <button
         type="button"
