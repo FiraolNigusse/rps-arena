@@ -1,8 +1,13 @@
 import json
 import urllib.request
 import urllib.error
+from decouple import config
 
-TOKEN = "8556491140:AAF1Epqe5U3H93cWzWDSAn2ekhervvU1CHE"
+TOKEN = config("TELEGRAM_BOT_TOKEN", default=None)
+if not TOKEN:
+    print("❌ Error: TELEGRAM_BOT_TOKEN not found in .env or environment")
+    exit(1)
+
 URL = f"https://api.telegram.org/bot{TOKEN}/createInvoiceLink"
 
 def test_invoice():
