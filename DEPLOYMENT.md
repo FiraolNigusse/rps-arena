@@ -98,13 +98,13 @@ python manage.py collectstatic --noinput
 ### 4. Run with Gunicorn (production)
 
 ```bash
-gunicorn core.wsgi:application --bind 0.0.0.0:8000 --workers 3
+gunicorn core.wsgi:application --bind 0.0.0.0:$PORT --workers 3
 ```
 
 For ASGI (WebSockets):
 
 ```bash
-daphne -b 0.0.0.0 -p 8000 core.asgi:application
+daphne -b 0.0.0.0 -p $PORT core.asgi:application
 ```
 
 ---
